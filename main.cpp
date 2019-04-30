@@ -1,7 +1,4 @@
-#include <iostream>
-
-int main()
-{
-    std::cout << "Hello world!\n";
-}
+//
+// Created by polarbabe on 01.05.19.
+//
 

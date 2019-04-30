@@ -1,0 +1,9 @@
+[submodule "lib/Catch2"]
+	path = lib/Catch2
+	url = https://github.com/catchorg/Catch2.git
+[submodule "lib/Eigen"]
+	path = lib/Eigen
+	url = https://github.com/eigenteam/eigen-git-mirror
+[submodule "lib/cmake11"]
+	path = lib/cmake11
+	url = https://github.com/pybind/pybind11
