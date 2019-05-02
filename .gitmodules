@@ -4,6 +4,9 @@
 [submodule "lib/Eigen"]
 	path = lib/Eigen
 	url = https://github.com/eigenteam/eigen-git-mirror
-[submodule "lib/cmake11"]
-	path = lib/cmake11
+[submodule "lib/pybind11"]
+	path = lib/pybind11
 	url = https://github.com/pybind/pybind11
+[submodule "lib/spdlog"]
+	path = lib/spdlog
+	url = https://github.com/gabime/spdlog.git
