@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.9)
 
+project(libdl VERSION 0.1
+        DESCRIPTION "My first DL library"
+        LANGUAGES CXX)
+
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     # Update submodules as needed
@@ -15,13 +19,12 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
-if(NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/repo/CMakeLists.txt")
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/Catch2" OR
+   NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/Eigen" OR
+   NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/pybind11" OR
+   NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/spdlog")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
-
-project(libdl VERSION 0.1
-        DESCRIPTION "My first DL library"
-        LANGUAGES CXX)
 
 set(TEST_TARGET main)
 
