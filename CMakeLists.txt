@@ -19,10 +19,10 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
-if(NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/Catch2" OR
-   NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/Eigen" OR
-   NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/pybind11" OR
-   NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/spdlog")
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Catch2" OR
+   NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Eigen" OR
+   NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/pybind11" OR
+   NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/spdlog")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
@@ -31,15 +31,15 @@ set(TEST_TARGET main)
 add_executable(${TEST_TARGET} main.cpp)
 target_compile_features(${TEST_TARGET} PUBLIC cxx_std_17)
 
-add_subdirectory(lib/Catch2)
+add_subdirectory(libs/Catch2)
 target_link_libraries(${TEST_TARGET} Catch2::Catch2)
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 target_link_libraries(${TEST_TARGET} Eigen3::Eigen)
 
-add_subdirectory(lib/pybind11)
+add_subdirectory(libs/pybind11)
 target_link_libraries(${TEST_TARGET} pybind11::pybind11)
 # pybind11_add_module(${TEST_TARGET} mymain.cpp)
 
-add_subdirectory(lib/spdlog)
+add_subdirectory(libs/spdlog)
 target_link_libraries(${TEST_TARGET} spdlog::spdlog)
