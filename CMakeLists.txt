@@ -28,7 +28,7 @@ endif()
 
 set(TEST_TARGET main)
 
-add_executable(${TEST_TARGET} main.cpp)
+add_executable(${TEST_TARGET} main.cpp src/ComputationalNode.cpp src/ComputationalNode.h src/Add.cpp src/Add.h src/Variable.cpp src/Variable.h src/Multiply.cpp src/Multiply.h src/Sigmoid.cpp src/Sigmoid.h src/CWiseMultiply.cpp src/CWiseMultiply.h src/Sub.cpp src/Sub.h src/ReduceSum.cpp src/ReduceSum.h)
 target_compile_features(${TEST_TARGET} PUBLIC cxx_std_17)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Catch2)
