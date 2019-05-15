@@ -26,26 +26,27 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Catch2" OR
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-set(TEST_TARGET main)
 
-add_executable(${TEST_TARGET} main.cpp src/ComputationalNode.cpp src/ComputationalNode.h src/Add.cpp src/Add.h src/Variable.cpp src/Variable.h src/Multiply.cpp src/Multiply.h src/Sigmoid.cpp src/Sigmoid.h src/CWiseMultiply.cpp src/CWiseMultiply.h src/Sub.cpp src/Sub.h src/ReduceSum.cpp src/ReduceSum.h)
-target_compile_features(${TEST_TARGET} PUBLIC cxx_std_17)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Catch2)
-target_link_libraries(${TEST_TARGET} Catch2::Catch2)
-
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-target_link_libraries(${TEST_TARGET} Eigen3::Eigen)
-
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/pybind11)
-target_link_libraries(${TEST_TARGET} pybind11::pybind11)
-# pybind11_add_module(${TEST_TARGET} mymain.cpp)
-
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog)
-target_link_libraries(${TEST_TARGET} spdlog::spdlog)
 
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/libs/Catch2/contrib")
-include(CTest)
-include(Catch)
+set(TEST_TARGET libdl)
+
+pybind11_add_module(${TEST_TARGET} src/Tensor.cpp)
+
+# add_executable(${TEST_TARGET} main.cpp src/Tensor.cpp src/Tensor.h src/CNode.cpp src/CNode.h)
+target_link_libraries(${TEST_TARGET} PRIVATE Catch2::Catch2 Eigen3::Eigen pybind11::pybind11 spdlog::spdlog)
+
+
+target_compile_features(${TEST_TARGET} PUBLIC cxx_std_17)
+
+
+# list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/libs/Catch2/contrib")
+# include(CTest)
+# include(Catch)
 # catch_discover_tests(${TEST_TARGET})
+
 
