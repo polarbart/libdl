@@ -1,48 +1,63 @@
 #include <utility>
 
-//
-// Created by polarbabe on 12.05.19.
-//
-
 #include "Tensor.h"
 
-Tensor::Tensor(pybind11::array_t<float, py::array::f_style> data) : data(std::move(data)) {
-    bufferInfo = data.request(true);
+template<typename D, int R>
+Tensor<D, R>::Tensor(pybind11::array_t<D, py::array::f_style> data, bool requires_grad)
+        : data(data),
+          bufferInfo(data.request()),
+          eTensor(intiTensorMap()),
+          grad_fn(std::nullopt),
+          requires_grad(requires_grad) {}
+
+template<typename D, int R>
+Tensor<D, R>::Tensor(const Eigen::Tensor<D, R> &eTensor)
+        : eTensor(eTensor),
+          data(intiNumpyBuffer()),
+          bufferInfo(data.request()),
+          grad_fn(std::nullopt),
+          requires_grad(false) {}
+
+template<typename D, int R>
+const Eigen::TensorMap<Eigen::Tensor<D, R>> Tensor<D, R>::intiTensorMap() {
+    std::vector<ssize_t> shape = bufferInfo.shape;
+    this->requires_grad = true;
+    Eigen::array<ssize_t, R> m;
+    for (size_t i = 0; i < R; i++)
+        m[i] = shape[i];
+    return Eigen::TensorMap<Eigen::Tensor<D, R>>(static_cast<D *>(bufferInfo.ptr), m);
 }
 
-Eigen::TensorMap<Eigen::Tensor<float, 4>> Tensor::getAsEigen() {
-    switch (bufferInfo.ndim) {
-        case 1:
-            return Eigen::TensorMap<Eigen::Tensor<float, 4>> (static_cast<float*>(bufferInfo.ptr), 1, 1, 1, bufferInfo.shape[0]);
-        case 2:
-            return Eigen::TensorMap<Eigen::Tensor<float, 4>> (static_cast<float*>(bufferInfo.ptr), 1, 1, bufferInfo.shape[0], bufferInfo.shape[1]);
-        case 3:
-            return Eigen::TensorMap<Eigen::Tensor<float, 4>> (static_cast<float*>(bufferInfo.ptr), 1, bufferInfo.shape[0], bufferInfo.shape[1], bufferInfo.shape[2]);
-        case 4:
-            return Eigen::TensorMap<Eigen::Tensor<float, 4>> (static_cast<float*>(bufferInfo.ptr), bufferInfo.shape[0], bufferInfo.shape[1], bufferInfo.shape[2], bufferInfo.shape[3]);
-        default:
-            throw "Nana TODO";
-    }
+template<typename D, int R>
+const py::array_t<D, py::array::f_style> Tensor<D, R>::intiNumpyBuffer() {
+    auto shape = eTensor.dimensions().data();
+    size_t a[R];
+    a[R - 1] = sizeof(D);
+    for (int i = R - 2; i >= 0; i--)
+        a[i] = shape[i] * a[i + 1];
+    return py::array_t<D, py::array::f_style>(eTensor.dimensions().data(), a, eTensor.data());
 }
 
-void Tensor::setFromEigen(const Eigen::Tensor<float, 4> &) {
-
+template<typename D, int R>
+void Tensor<D, R>::setGradFn(std::shared_ptr<CNode> g) {
+    grad_fn = std::optional<std::shared_ptr<CNode>>(g);
 }
 
-template<int R>
-Tensor::Tensor(Eigen::Tensor<float, R>) {
-
+template<typename D, int R>
+std::optional<std::shared_ptr<CNode>> Tensor<D, R>::getGradFn() {
+    return grad_fn;
 }
 
-template<int R>
-Eigen::TensorMap<Eigen::Tensor<float, R>> Tensor::getEigen() {
-    return Eigen::TensorMap<Eigen::Tensor<float, R>>(nullptr);
+template<typename D, int R>
+bool Tensor<D, R>::needsGradient() {
+    return requires_grad || grad_fn.has_value();
 }
 
-
+void init_Add(py::module &m);
 PYBIND11_MODULE(libdl, m) {
-    py::class_<Tensor>(m, "Tensor")
-            .def(py::init<py::array_t<float, py::array::f_style>>())
-            .def_readwrite("data", &Tensor::data)
-            .def_readwrite("requires_grad", &Tensor::requires_grad);
+    py::class_<Tensor<float, 2>>(m, "Tensor")
+            .def(py::init<py::array_t<float, py::array::f_style>, bool>())
+            .def_readonly("data", &Tensor<float, 2>::data)
+            .def_readwrite("requires_grad", &Tensor<float, 2>::requires_grad);
+    init_Add(m);
 }

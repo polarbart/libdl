@@ -18,6 +18,7 @@ int main() {
     Tensor<int, 2> w(2, 2);
     t.setValues({{{1,2}, {3, 4}}, {{5,6}, {7, 8}}, {{9,10}, {11,12}}, {{13,14}, {15,16}}});
     w.setValues({{1,-1}, {2, -2}});
+    (w + t).e
     //t.setConstant(2);
     //w.setConstant(1);
     std::cout << t << std::endl;

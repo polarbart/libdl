@@ -10,37 +10,30 @@
 #include "CNode.h"
 #include <pybind11/numpy.h>
 
-#define MAKEALL(a, )
-
 namespace py = pybind11;
 
+template <typename D, int R>
 class Tensor {
 public:
-    py::array_t<float, py::array::f_style> data;
-    bool requires_grad = false;
+    const py::array_t<D, py::array::f_style> data;
+    const Eigen::TensorMap<Eigen::Tensor<D, R>> eTensor;
+    bool requires_grad;
 
-    Tensor(pybind11::array_t<float, py::array::f_style>);
-
-    template <int R>
-    Tensor(Eigen::Tensor<float, R>);
-
-    // void backward();
-
-    template <int R>
-    Eigen::TensorMap<Eigen::Tensor<float, R>> getEigen();
+    Tensor(pybind11::array_t<D, py::array::f_style>, bool = false);
+    explicit Tensor(const Eigen::Tensor<D, R>&);
+    void setGradFn(std::shared_ptr<CNode>);
+    std::optional<std::shared_ptr<CNode>> getGradFn();
+    bool needsGradient();
 
 protected:
 
 private:
-    py::buffer_info bufferInfo;
+    const py::buffer_info bufferInfo;
     std::optional<std::shared_ptr<CNode>> grad_fn;
-    Eigen::TensorMap<Eigen::Tensor<float, 1>> e1;
-    Eigen::TensorMap<Eigen::Tensor<float, 2>> e2;
-    Eigen::TensorMap<Eigen::Tensor<float, 3>> e3;
-    Eigen::TensorMap<Eigen::Tensor<float, 4>> e4;
 
+    const Eigen::TensorMap<Eigen::Tensor<D, R>> intiTensorMap();
+    const py::array_t<D, py::array::f_style> intiNumpyBuffer();
 };
-
 
 
 
