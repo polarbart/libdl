@@ -15,13 +15,14 @@ namespace py = pybind11;
 template <typename D, int R>
 class Tensor {
 public:
-    const py::array_t<D, py::array::f_style> data;
-    const Eigen::TensorMap<Eigen::Tensor<D, R>> eTensor;
+    py::array_t<D, py::array::f_style> data;
+    Eigen::TensorMap<Eigen::Tensor<D, R>> eTensor;
     bool requires_grad;
 
-    explicit Tensor(pybind11::array_t<D, py::array::f_style>, bool = false);
-    static std::shared_ptr<Tensor<D, R>> make_tensor(Eigen::TensorMap<Eigen::Tensor<D, R>>&);
-    explicit Tensor(Eigen::TensorMap<Eigen::Tensor<D, R>>&);
+    Tensor(std::shared_ptr<D[]>, std::array<long, R>&, bool = false);
+
+    static Tensor<D, R>* fromNumpy(py::array_t<D, py::array::f_style>, bool = false);
+
     void setGradFn(const std::shared_ptr<CNode>&);
     std::optional<std::shared_ptr<CNode>> getGradFn();
     bool needsGradient();
@@ -29,9 +30,10 @@ public:
 private:
 
     std::optional<std::shared_ptr<CNode>> grad_fn;
+    std::shared_ptr<D[]> iData;
 
     static Eigen::TensorMap<Eigen::Tensor<D, R>> intiTensorMap(py::buffer_info);
-    static py::array_t<D, py::array::f_style> intiNumpyBuffer(Eigen::TensorMap<Eigen::Tensor<D, R>>&);
+    static py::array_t<D, py::array::f_style> initNpArray(std::shared_ptr<D[]>, std::array<long, R>&);
 };
 
 

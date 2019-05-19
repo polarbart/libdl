@@ -4,20 +4,13 @@
 #include "Tensor.h"
 //#include "Add.h"
 
-
-template<typename D, int R>
-Tensor<D, R>::Tensor(pybind11::array_t<D, py::array::f_style> data, bool requires_grad)
-        : data(data),
-          eTensor(intiTensorMap(data.request(true))),
+template <typename D, int R>
+Tensor<D, R>::Tensor(std::shared_ptr<D[]> d, std::array<long, R>& shape, bool requiresGrad)
+        : data(initNpArray(d, shape)),
+          eTensor(Eigen::TensorMap<Eigen::Tensor<D, R>>(d.get(), shape)),
           grad_fn(std::nullopt),
-          requires_grad(requires_grad) {}
-
-template<typename D, int R>
-Tensor<D, R>::Tensor(Eigen::TensorMap<Eigen::Tensor<D, R>> &eTensor)
-        : eTensor(eTensor),
-          data(intiNumpyBuffer(eTensor)),
-          grad_fn(std::nullopt),
-          requires_grad(false) {}
+          requires_grad(requiresGrad),
+          iData(d) {}
 
 template<typename D, int R>
 Eigen::TensorMap<Eigen::Tensor<D, R>> Tensor<D, R>::intiTensorMap(const py::buffer_info bufferInfo) {
@@ -29,16 +22,23 @@ Eigen::TensorMap<Eigen::Tensor<D, R>> Tensor<D, R>::intiTensorMap(const py::buff
 }
 
 template<typename D, int R>
-py::array_t<D, py::array::f_style> Tensor<D, R>::intiNumpyBuffer(Eigen::TensorMap<Eigen::Tensor<D, R>> &t) {
-    auto shape = t.dimensions();
-    size_t a[R], s[R];
-    a[R - 1] = sizeof(D);
-    s[R - 1] = shape[R - 1];
-    for (int i = R - 2; i >= 0; i--) {
-        a[i] = shape[i] * a[i + 1];
-        s[i] = shape[i];
-    }
-    return py::array_t<D, py::array::f_style>(s, a, t.data());
+py::array_t<D, py::array::f_style> Tensor<D, R>::initNpArray(std::shared_ptr<D[]> d, std::array<long, R>& shape) {
+    size_t strides[R];
+    strides[R - 1] = sizeof(D);
+    for (int i = R - 2; i >= 0; --i)
+        strides[i] = shape[i] * strides[i + 1];
+    return py::array_t<D, py::array::f_style>(shape, strides, d.get());
+}
+
+template<typename D, int R>
+Tensor<D, R>* Tensor<D, R>::fromNumpy(py::array_t<D, py::array::f_style> array, bool requiresGrad) {
+    auto info = array.request(false);
+    auto d = std::shared_ptr<D[]>(new D[info.size]);
+    std::copy_n(static_cast<D*>(info.ptr), info.size, d.get());
+    std::array<long, R> shape {};
+    for (int i = 0; i < R; ++i)
+        shape[i] = info.shape[i];
+    return new Tensor<D, R>(d, shape, requiresGrad);
 }
 
 template<typename D, int R>
@@ -56,19 +56,13 @@ bool Tensor<D, R>::needsGradient() {
     return requires_grad || grad_fn.has_value();
 }
 
-template<typename D, int R>
-std::shared_ptr<Tensor<D, R>> Tensor<D, R>::make_tensor(Eigen::TensorMap<Eigen::Tensor<D, R>> &r) {
-    return std::shared_ptr<Tensor<D, R>>(new Tensor(r));
-}
-
 //#include "Add.h"
 void init_Add(py::module &m);
 PYBIND11_MODULE(libdl, m) {
     //py::class_<Eigen::Tensor<float, 2>>(m, "_EigenTensor").def(py::init());
     py::class_<Tensor<float, 2>>(m, "Tensor")
-            .def(py::init<py::array_t<float, py::array::f_style>, bool>())
+            .def(py::init(&Tensor<float, 2>::fromNumpy))
             // .def("_from_eigen", &Eigen::Tensor<float, 2>&>())
-            .def("_make_tensor", &Tensor<float, 2>::make_tensor)
             .def_readonly("data", &Tensor<float, 2>::data)
             .def_readwrite("requires_grad", &Tensor<float, 2>::requires_grad)
             .def("setGradFn", &Tensor<float, 2>::setGradFn)

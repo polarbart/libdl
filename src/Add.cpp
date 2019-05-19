@@ -1,8 +1,5 @@
 #include <utility>
-
-#include <utility>
-
-#include <utility>
+#include <iostream>
 
 //
 // Created by polarbabes on 16.05.19.
@@ -17,16 +14,13 @@ void Add<D, R>::backward() {
 
 template<typename D, int R>
 std::shared_ptr<Tensor<D, R>> Add<D, R>::add(Tensor<D, R> &a, Tensor<D, R> &b) {
-    size_t s = 1;
-    for (int i = 0; i < R; ++i) {
-        s *= a.eTensor.dimension(i);
-    }
-    auto data = new D[s];
-    Eigen::TensorMap<Eigen::Tensor<D, R>> t(data, a.eTensor.dimensions());
+    auto data = std::shared_ptr<D[]>(new D[a.eTensor.size()]);
+    Eigen::TensorMap<Eigen::Tensor<D, R>> t(data.get(), a.eTensor.dimensions());
     t = a.eTensor + b.eTensor;
-    auto result = Tensor<D, R>::make_tensor(t);
-    // auto result = std::make_shared<Tensor<D, R>>(a.data);
-    // auto result = std::shared_ptr(new Tensor<D, R>(a.eTensor + b.eTensor));
+    std::cout << t << std::endl;
+    std::array<long, R> shape{};
+    std::copy(t.dimensions().begin(), t.dimensions().end(), shape.begin());
+    auto result = std::make_shared<Tensor<D, R>>(data, shape);
     if (a.needsGradient() || b.needsGradient())
         result->setGradFn(std::make_shared<Add<D, R>>(a.getGradFn(), b.getGradFn(), result));
     return result;
