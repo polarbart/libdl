@@ -35,7 +35,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog)
 
 set(TEST_TARGET libdl)
 
-pybind11_add_module(${TEST_TARGET} src/Tensor.cpp src/Add.cpp)
+pybind11_add_module(${TEST_TARGET} src/Tensor.cpp src/Add.cpp src/MatMul.cpp)
 
 # add_executable(${TEST_TARGET} main.cpp src/Tensor.cpp src/Tensor.h src/CNode.cpp src/CNode.h)
 target_link_libraries(${TEST_TARGET} PRIVATE Catch2::Catch2 Eigen3::Eigen pybind11::pybind11 spdlog::spdlog)

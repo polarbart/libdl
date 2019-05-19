@@ -19,21 +19,22 @@ public:
     const Eigen::TensorMap<Eigen::Tensor<D, R>> eTensor;
     bool requires_grad;
 
-    Tensor(pybind11::array_t<D, py::array::f_style>, bool = false);
-    explicit Tensor(const Eigen::Tensor<D, R>&);
-    void setGradFn(std::shared_ptr<CNode>);
+    explicit Tensor(pybind11::array_t<D, py::array::f_style>, bool = false);
+    static std::shared_ptr<Tensor<D, R>> make_tensor(Eigen::TensorMap<Eigen::Tensor<D, R>>&);
+    explicit Tensor(Eigen::TensorMap<Eigen::Tensor<D, R>>&);
+    void setGradFn(const std::shared_ptr<CNode>&);
     std::optional<std::shared_ptr<CNode>> getGradFn();
     bool needsGradient();
 
-protected:
-
 private:
-    const py::buffer_info bufferInfo;
+
     std::optional<std::shared_ptr<CNode>> grad_fn;
 
-    const Eigen::TensorMap<Eigen::Tensor<D, R>> intiTensorMap();
-    const py::array_t<D, py::array::f_style> intiNumpyBuffer();
+    static Eigen::TensorMap<Eigen::Tensor<D, R>> intiTensorMap(py::buffer_info);
+    static py::array_t<D, py::array::f_style> intiNumpyBuffer(Eigen::TensorMap<Eigen::Tensor<D, R>>&);
 };
+
+
 
 
 

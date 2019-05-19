@@ -17,7 +17,16 @@ void Add<D, R>::backward() {
 
 template<typename D, int R>
 std::shared_ptr<Tensor<D, R>> Add<D, R>::add(Tensor<D, R> &a, Tensor<D, R> &b) {
-    auto result = std::make_shared<Tensor<D, R>>((a.eTensor + b.eTensor).eval());
+    size_t s = 1;
+    for (int i = 0; i < R; ++i) {
+        s *= a.eTensor.dimension(i);
+    }
+    auto data = new D[s];
+    Eigen::TensorMap<Eigen::Tensor<D, R>> t(data, a.eTensor.dimensions());
+    t = a.eTensor + b.eTensor;
+    auto result = Tensor<D, R>::make_tensor(t);
+    // auto result = std::make_shared<Tensor<D, R>>(a.data);
+    // auto result = std::shared_ptr(new Tensor<D, R>(a.eTensor + b.eTensor));
     if (a.needsGradient() || b.needsGradient())
         result->setGradFn(std::make_shared<Add<D, R>>(a.getGradFn(), b.getGradFn(), result));
     return result;

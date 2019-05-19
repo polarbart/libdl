@@ -12,6 +12,7 @@ class Add : public CNode {
 
 public:
     void backward() override;
+
     static std::shared_ptr<Tensor<D, R>> add(Tensor<D, R>& a, Tensor<D, R>& b);
 
     Add(std::optional<std::shared_ptr<CNode>> a, std::optional<std::shared_ptr<CNode>> b, std::weak_ptr<Tensor<D, R>>);
