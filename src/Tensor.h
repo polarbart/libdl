@@ -21,7 +21,7 @@ public:
 
     Tensor(std::shared_ptr<D[]>, std::array<long, R>&, bool = false);
 
-    static Tensor<D, R>* fromNumpy(py::array_t<D, py::array::f_style>, bool = false);
+    static std::shared_ptr<Tensor<D, R>> fromNumpy(py::array_t<D, py::array::f_style>, bool = false);
 
     void setGradFn(const std::shared_ptr<CNode>&);
     std::optional<std::shared_ptr<CNode>> getGradFn();
@@ -32,8 +32,7 @@ private:
     std::optional<std::shared_ptr<CNode>> grad_fn;
     std::shared_ptr<D[]> iData;
 
-    static Eigen::TensorMap<Eigen::Tensor<D, R>> intiTensorMap(py::buffer_info);
-    static py::array_t<D, py::array::f_style> initNpArray(std::shared_ptr<D[]>, std::array<long, R>&);
+    static py::array_t<D, py::array::f_style> initNpArray(D*, std::array<long, R>&);
 };
 
 
