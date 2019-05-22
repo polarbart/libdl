@@ -1,7 +1,9 @@
 import numpy as np
 import libdl as l
+np.random.seed(0)
 
 
+# A small helperfunction that instanciates my own tensors from numpy array.
 def from_numpy(a, requiresGrad=False):
     a = np.array(a)
     if len(a.shape) == 1:
@@ -10,35 +12,43 @@ def from_numpy(a, requiresGrad=False):
         return l.Tensor2(np.asfortranarray(a).astype(np.float32), requiresGrad)
 
 
-np.random.seed(3)
-
+# the dataset
 x = from_numpy([[0, 0], [0, 1], [1, 0], [1, 1]])
 y = from_numpy([[0], [1], [1], [0]])
 
+# hyperparameter
+lr = .001
+lr_decay = .999
+hidden_neurons = 2
+log_every = 500
+epochs = 10000
 
-lr = .005
-hidden_layer = 2
-
-W1 = from_numpy(np.random.normal(0, 1/2, (2, hidden_layer)), True)
-B1 = from_numpy(np.zeros(hidden_layer), True)
-W2 = from_numpy(np.random.normal(0, 1/hidden_layer, (hidden_layer, 1)), True)
+# weights and biases for the neural network
+W1 = from_numpy(np.random.normal(0, 1 / 2, (2, hidden_neurons)), True)
+B1 = from_numpy(np.zeros(hidden_neurons), True)
+W2 = from_numpy(np.random.normal(0, 1 / hidden_neurons, (hidden_neurons, 1)), True)
 B2 = from_numpy([0], True)
 parameters = [W1, B1, W2, B2]
 
 
+# forward pass
 def forward(x):
-    h1 = l.sigmoid(l.add(l.matmul(x, W1), B1))
-    return l.sigmoid(l.add(l.matmul(h1, W2), B2))
+    h1 = l.sigmoid(l.matmul(x, W1) + B1)
+    return l.sigmoid(l.matmul(h1, W2) + B2)
 
 
-for epoch in range(1000):
+# training
+print("epoch |  0^0 |  0^1 |  1^0 |  1^1 | loss")
+for epoch in range(epochs):
+
     yp = forward(x)
-    print(yp.data)
-    loss = l.sum(l.sum(l.pow(l.sub(y, yp), 2), 0), 0)
-    print(loss.data)
-    loss.backward(1)
+    loss = l.mean((y - yp)**2) # mse
+    loss.backward()
+
     for p in parameters:
         p.applyGradient(lr)
         p.zeroGrad()
-    lr *= .95
+    lr *= lr_decay
 
+    if (epoch % log_every) == 0 or epoch == (epochs - 1):
+        print("{:5d} | {:.2f} | {:.2f} | {:.2f} | {:.2f} | {:.6f}".format(epoch, *yp.data[:, 0], loss.data[0]))

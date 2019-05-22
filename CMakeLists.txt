@@ -42,7 +42,7 @@ target_link_libraries(${TEST_TARGET} PRIVATE Catch2::Catch2 Eigen3::Eigen pybind
 
 
 target_compile_features(${TEST_TARGET} PUBLIC cxx_std_17)
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation")
 
 # list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/libs/Catch2/contrib")
 # include(CTest)
