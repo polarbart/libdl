@@ -8,15 +8,18 @@
 #include "CNode.h"
 
 template <typename D, int R>
+class Tensor;
+
+template <typename D, int R>
 class Leaf : public CNode<D, R> {
 public:
-    explicit Leaf(std::weak_ptr<Tensor<D, R>> t) : CNode<D, R>(std::vector<std::shared_ptr<CNodeBase>> {}, t) {}
+    Leaf(std::weak_ptr<Tensor<D, R>> t, const std::array<long, R> &d) : CNode<D, R>(std::vector<std::shared_ptr<CNodeBase>> {}, d, t) {}
     void computeGradients() override {
         CNode<D, R>::resetGrad = true;
         if (CNode<D, R>::t.expired())
             return;
         auto p = CNode<D, R>::t.lock();
-        if (p->requires_grad)
+        if (p->requiresGrad)
             p->addGrad(CNode<D, R>::grad);
     }
 

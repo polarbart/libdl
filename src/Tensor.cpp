@@ -2,8 +2,8 @@
 #include <iostream>
 
 #include "Tensor.h"
-#include "MatMul.h"
 #include "Add.h"
+#include "MatMul.h"
 #include "Leaf.h"
 #include "Sub.h"
 #include "Sigmoid.h"
@@ -28,11 +28,10 @@ void init_Module1(py::module &m) {
     std::string name = "Tensor" + std::to_string(R);
     auto tensor = py::class_<Tensor<D, R>, std::shared_ptr<Tensor<D, R>>>(m, name.c_str())
             .def(py::init(&Tensor<D, R>::fromNumpy))
-            .def_readwrite("data", &Tensor<D, R>::data)
-            .def_readwrite("requires_grad", &Tensor<D, R>::requires_grad)
-            .def("needsGradient", &Tensor<D, R>::needsGradient)
+            .def("numpy", [](const Tensor<D, R> &t) {return std::static_pointer_cast<ETensor<D, R>>(t.eTensor)->array;})
+            .def_readwrite("requires_grad", &Tensor<D, R>::requiresGrad)
             .def("backward", &Tensor<D, R>::backward, py::arg("v") = 1)
-            .def("npgrad", &Tensor<D, R>::npgrad)
+            .def("grad", [](const Tensor<D, R> &t) {std::cout << t.grad.use_count() << std::endl; return std::static_pointer_cast<ETensor<D, R>>(t.grad)->array;})
             .def("zeroGrad", &Tensor<D, R>::zeroGrad)
             .def("applyGradient", &Tensor<D, R>::applyGradient)
             .def("__pow__", &Pow<D, R>::pow);

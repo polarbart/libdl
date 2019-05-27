@@ -9,31 +9,45 @@
 #include <vector>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include "CNodeBase.h"
-#include "Tensor.h"
+#include "ETensor.h"
 
+template <typename D, int R>
+class Tensor;
 
 template <typename D, int R>
 class CNode : public CNodeBase {
 public:
-    void addGrad(const Eigen::Tensor<D, R>& g) {
+    template <typename Derived>
+    void addGrad(const Derived &g) {
         if (resetGrad) {
-            grad = g;
+            if (grad.use_count() == 0) {
+                auto p = t.lock();
+                if (!t.expired() && p->grad.use_count() > 0) {
+                    grad = p->grad;
+                } else
+                    grad = std::make_shared<ETensor<D, R>>(g, shape);
+            } else
+                *grad = g;
             resetGrad = false;
         } else
-            grad += g;
+            *grad += g;
     }
-    Eigen::Tensor<D, R> grad;
+
+    void zeroGrad() {
+        resetGrad = true;
+    }
+
+    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> grad;
 
 protected:
-
-
-    CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, std::weak_ptr<Tensor<D, R>> t) : CNodeBase(p), t(t) {}
+    const std::array<long, R> shape;
+    CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::array<long, R> &d, std::weak_ptr<Tensor<D, R>> t) : CNodeBase(p), shape(d), t(t) {}
 
     void finishComputeGradient() {
         if (t.expired())
             return;
         auto p = t.lock();
-        if (p->requires_grad)
+        if (p->requiresGrad)
             p->addGrad(grad);
         p->gradFn = std::nullopt;
     }

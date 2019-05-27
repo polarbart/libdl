@@ -3,7 +3,7 @@ import libdl as l
 np.random.seed(0)
 
 
-# A small helperfunction that instanciates my own tensors from numpy array.
+# A small helperfunction that instanciates my own tensors from a numpy array
 def from_numpy(a, requiresGrad=False):
     a = np.array(a)
     if len(a.shape) == 1:
@@ -42,7 +42,7 @@ print("epoch |  0^0 |  0^1 |  1^0 |  1^1 | loss")
 for epoch in range(epochs):
 
     yp = forward(x)
-    loss = l.mean((y - yp)**2) # mse
+    loss = l.mean((y - yp)**2)  # mse
     loss.backward()
 
     for p in parameters:
@@ -51,4 +51,4 @@ for epoch in range(epochs):
     lr *= lr_decay
 
     if (epoch % log_every) == 0 or epoch == (epochs - 1):
-        print("{:5d} | {:.2f} | {:.2f} | {:.2f} | {:.2f} | {:.6f}".format(epoch, *yp.data[:, 0], loss.data[0]))
+        print("{:5d} | {:.2f} | {:.2f} | {:.2f} | {:.2f} | {:.6f}".format(epoch, *yp.numpy()[:, 0], loss.numpy()))

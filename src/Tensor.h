@@ -11,70 +11,69 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <queue>
-#include "CNodeBase.h"
+#include "CNode.h"
+#include "ETensor.h"
+#include "Leaf.h"
 
-template<typename D, int R>
-class CNode;
-
-template<typename D, int R>
-class Leaf;
 
 namespace py = pybind11;
 
 template <typename D, int R>
 class Tensor {
 public:
-    py::array_t<D, py::array::f_style> data;
-    Eigen::TensorMap<Eigen::Tensor<D, R>> eTensor;
-    bool requires_grad;
 
-    Tensor(std::shared_ptr<D[]> d, const std::array<long, R>& shape, bool requiresGrad = false)
-            : data(initNpArray(d.get(), shape)),
-              eTensor(Eigen::TensorMap<Eigen::Tensor<D, R>>(d.get(), shape)),
+    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> eTensor;
+    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> grad;
+    std::optional<std::shared_ptr<CNode<D, R>>> gradFn;
+    bool requiresGrad;
+
+    template<typename OtherDerived>
+    Tensor(const OtherDerived &t, const std::array<long, R> &d)
+            : eTensor(std::make_shared<ETensor<D, R>>(t, d)),
               gradFn(std::nullopt),
-              requires_grad(requiresGrad),
-              iData(d) {}
+              requiresGrad(requiresGrad) {}
 
-    static std::shared_ptr<Tensor<D, R>> fromNumpy(py::array_t<D, py::array::f_style> array, bool requiresGrad = false) {
-        auto info = array.request(false);
-        auto d = std::shared_ptr<D[]>(new D[info.size]);
-        std::copy_n(static_cast<D*>(info.ptr), info.size, d.get());
-        std::array<long, R> shape {};
-        for (int i = 0; i < R; ++i)
-            shape[i] = info.shape[i];
-        auto ret = std::shared_ptr<Tensor<D, R>>(new Tensor<D, R>(d, shape, requiresGrad));
-        ret->setGradFn(std::make_shared<Leaf<D, R>>(ret));
-        return ret;
+    explicit Tensor(const py::array_t<D, py::array::f_style> &array, bool requiresGrad = false)
+            : eTensor(std::make_shared<ETensor<D, R>>(array)),
+              gradFn(std::nullopt),
+              requiresGrad(requiresGrad) {}
+
+    static std::shared_ptr<Tensor<D, R>> fromNumpy(const py::array_t<D, py::array::f_style> &array, bool requiresGrad = false) {
+        auto t = std::make_shared<Tensor<D, R>>(array, requiresGrad);
+        if (requiresGrad)
+            t->setGradFn(std::make_shared<Leaf<D, R>>(t, t->eTensor->dimensions()));
+        return t;
     }
 
     void setGradFn(const std::shared_ptr<CNode<D, R>>& g) {
         gradFn = std::optional<std::shared_ptr<CNode<D, R>>>(g);
     }
 
-    std::optional<std::shared_ptr<CNode<D, R>>> gradFn;
-
     bool needsGradient() {
-        return requires_grad || gradFn.has_value();
-    }
-
-    void addGrad(const Eigen::Tensor<D, R>& g) {
-        if (resetGrad) {
-            grad = g;
-            resetGrad = false;
-        } else
-            grad += g;
+        return requiresGrad || gradFn.has_value();
     }
 
     void zeroGrad() {
-        resetGrad = true;
+        grad = std::shared_ptr<ETensor<D, R>>(nullptr);
     }
 
-    void backward(float v = 1) {
+
+    void applyGradient(D lr) {
+        if (grad.use_count() > 0)
+            *eTensor -= grad->constant(lr) + *grad;
+    }
+
+    void addGrad(const std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> &g) {
+        if (grad.use_count() == 0)
+            grad = g;
+        else if (grad != g)
+            *grad += *g;
+    }
+
+    void backward(D v = 1) {
         if (!gradFn.has_value())
             std::cout << "no grad is computed" << std::endl;
-        Eigen::Tensor<D, R> g = eTensor.constant(v);
-        // std::cout << gradFn.value()->grad << std::endl;
-        gradFn.value()->addGrad(g);
+        gradFn.value()->addGrad(eTensor->constant(v));
 
         auto head = gradFn.value();
 
@@ -108,42 +107,6 @@ public:
                     q.push(n);
                 }
             }
-        }
-    }
-
-    void applyGradient(D lr) {
-        eTensor -= grad.constant(lr) + grad;
-    }
-
-    py::array_t<D, py::array::f_style> npgrad() {
-        if constexpr (R == 0)
-            return py::array_t<D, py::array::f_style>(std::vector<size_t> {1}, std::array<size_t, 1> {sizeof(D)}, grad.data());
-        else {
-            size_t strides[R];
-            std::vector<long> shape {grad.dimension(0)};
-            strides[0] = sizeof(D);
-            for (int i = 1; i < R; ++i) {
-                strides[i] = grad.dimension(i) * strides[i - 1];
-                shape.push_back(grad.dimension(i));
-            }
-            return py::array_t<D, py::array::f_style>(shape, strides, grad.data());
-        }
-    }
-
-private:
-    Eigen::Tensor<D, R> grad;
-    bool resetGrad = true;
-    std::shared_ptr<D[]> iData;
-
-    static py::array_t<D, py::array::f_style> initNpArray(D* d, const std::array<long, R>& shape) {
-        if constexpr (R == 0)
-            return py::array_t<D, py::array::f_style>(std::vector<size_t> {1}, std::array<size_t, 1> {sizeof(D)}, d);
-        else {
-            size_t strides[R];
-            strides[0] = sizeof(D);
-            for (int i = 1; i < R; ++i)
-                strides[i] = shape[i] * strides[i - 1]; // TODO right?
-            return py::array_t<D, py::array::f_style>(shape, strides, d);
         }
     }
 };
