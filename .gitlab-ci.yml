@@ -2,6 +2,7 @@ image: elsa/ubu18-clang6:latest
 
 stages:
   - compile
+  - test
 
 build-linux-gcc:
   stage: compile
@@ -30,4 +31,15 @@ build-linux-clang:
     key: "$CI_JOB_NAME"
     paths:
       - build/
-      
+
+test-XOR:
+  stage: test
+  script:
+    - python setup.py install --user
+    - python XOR.py
+  tags:
+    - XOR
+  cache:
+    key: "$CI_JOB_NAME"
+    paths:
+      - build/

@@ -31,7 +31,7 @@ public:
     Tensor(const OtherDerived &t, const std::array<long, R> &d)
             : eTensor(std::make_shared<ETensor<D, R>>(t, d)),
               gradFn(std::nullopt),
-              requiresGrad(requiresGrad) {}
+              requiresGrad(false) {}
 
     explicit Tensor(const py::array_t<D, py::array::f_style> &array, bool requiresGrad = false)
             : eTensor(std::make_shared<ETensor<D, R>>(array)),
