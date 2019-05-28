@@ -41,7 +41,7 @@ public:
     static std::shared_ptr<Tensor<D, R>> fromNumpy(const py::array_t<D, py::array::f_style> &array, bool requiresGrad = false) {
         auto t = std::make_shared<Tensor<D, R>>(array, requiresGrad);
         if (requiresGrad)
-            t->setGradFn(std::make_shared<Leaf<D, R>>(t, t->eTensor->dimensions()));
+            t->setGradFn(std::make_shared<Leaf<D, R>>(t));
         return t;
     }
 

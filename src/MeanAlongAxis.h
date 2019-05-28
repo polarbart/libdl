@@ -15,21 +15,20 @@ namespace py = pybind11;
 template <typename D, int R>
 class MeanAlongAxis : public CNode<D, R> {
 public:
-    MeanAlongAxis(std::optional<std::shared_ptr<CNode<D, R + 1>>> a,
-                  const std::array<long, R> &shape,
-                  std::weak_ptr<Tensor<D, R>> r,
+    MeanAlongAxis(const std::optional<std::shared_ptr<CNode<D, R + 1>>> &a,
+                  const std::shared_ptr<Tensor<D, R>> &r,
                   int axis,
                   long size)
-                  : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a}), shape, r), a(a), axis(axis), size(size) {}
+                  : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a}), r), a(a), axis(axis), size(size) {}
 
-    static std::shared_ptr<Tensor<D, R - 1>> mean(std::shared_ptr<Tensor<D, R>> a, int axis) {
+    static std::shared_ptr<Tensor<D, R - 1>> mean(const std::shared_ptr<Tensor<D, R>> &a, int axis) {
         std::array<long, R - 1> shape {};
         std::copy_n(std::begin(a->eTensor->dimensions()), axis, std::begin(shape));
         std::copy_n(std::begin(a->eTensor->dimensions()) + axis + 1, R - axis - 1, std::begin(shape) + axis);
         auto t = a->eTensor->mean(Eigen::array<int, 1>{axis});
         auto result = std::make_shared<Tensor<D, R - 1>>(t, shape);
         if (a->needsGradient())
-            result->setGradFn(std::make_shared<MeanAlongAxis<D, R - 1>>(a->gradFn, shape, result, axis, a->eTensor->dimension(axis)));
+            result->setGradFn(std::make_shared<MeanAlongAxis<D, R - 1>>(a->gradFn, result, axis, a->eTensor->dimension(axis)));
         return result;
     }
 

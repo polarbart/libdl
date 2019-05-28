@@ -41,7 +41,7 @@ public:
 
 protected:
     const std::array<long, R> shape;
-    CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::array<long, R> &d, std::weak_ptr<Tensor<D, R>> t) : CNodeBase(p), shape(d), t(t) {}
+    CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::shared_ptr<Tensor<D, R>> &t) : CNodeBase(p), shape(t->eTensor->dimensions()), t(t) {}
 
     void finishComputeGradient() {
         if (t.expired())

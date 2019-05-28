@@ -13,7 +13,7 @@ class Tensor;
 template <typename D, int R>
 class Leaf : public CNode<D, R> {
 public:
-    Leaf(std::weak_ptr<Tensor<D, R>> t, const std::array<long, R> &d) : CNode<D, R>(std::vector<std::shared_ptr<CNodeBase>> {}, d, t) {}
+    explicit Leaf(const std::shared_ptr<Tensor<D, R>> &t) : CNode<D, R>(std::vector<std::shared_ptr<CNodeBase>> {}, t) {}
     void computeGradients() override {
         CNode<D, R>::resetGrad = true;
         if (CNode<D, R>::t.expired())

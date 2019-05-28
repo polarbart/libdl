@@ -12,6 +12,8 @@
 #include "MeanAlongAxis.h"
 #include "Sum.h"
 #include "Mean.h"
+#include "LeakyRelu.h"
+#include "Relu.h"
 
 template<typename D, int RA, int RB>
 void init_Module2(py::module &m, py::class_<Tensor<D, RA>, std::shared_ptr<Tensor<D, RA>>> tensor) {
@@ -35,6 +37,9 @@ void init_Module1(py::module &m) {
             .def("zeroGrad", &Tensor<D, R>::zeroGrad)
             .def("applyGradient", &Tensor<D, R>::applyGradient)
             .def("__pow__", &Pow<D, R>::pow);
+    m.def("sigmoid", &Sigmoid<D, R>::sigmoid);
+    m.def("leakyRelu", &LeakyRelu<D, R>::leakyRelu);
+    m.def("relu", &Relu<D, R>::relu);
     m.def("sigmoid", &Sigmoid<D, R>::sigmoid);
     m.def("pow", &Pow<D, R>::pow);
     if constexpr (R > 0) {

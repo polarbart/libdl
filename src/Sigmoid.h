@@ -11,14 +11,14 @@
 template <typename D, int R>
 class Sigmoid : public CNode<D, R> {
 public:
-    Sigmoid(std::optional<std::shared_ptr<CNode<D, R>>> a, const std::array<long, R> &d, std::shared_ptr<Tensor<D, R>> r)
-    : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a}), d, r), a(a), r(r->eTensor) {}
+    Sigmoid(const std::optional<std::shared_ptr<CNode<D, R>>> &a, const std::shared_ptr<Tensor<D, R>> &r)
+    : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a}), r), a(a), r(r->eTensor) {}
 
-    static std::shared_ptr<Tensor<D, R>> sigmoid(std::shared_ptr<Tensor<D, R>> a) {
+    static std::shared_ptr<Tensor<D, R>> sigmoid(const std::shared_ptr<Tensor<D, R>> &a) {
         auto x = a->eTensor->constant(1) / (a->eTensor->constant(1) + (-(*a->eTensor)).exp());
         auto result = std::make_shared<Tensor<D, R>>(x, a->eTensor->dimensions());
         if (a->needsGradient())
-            result->setGradFn(std::make_shared<Sigmoid<D, R>>(a->gradFn, a->eTensor->dimensions(), result));
+            result->setGradFn(std::make_shared<Sigmoid<D, R>>(a->gradFn, result));
         return result;
     }
 

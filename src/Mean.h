@@ -15,10 +15,11 @@ namespace py = pybind11;
 template <typename D, int K>
 class Mean : public CNode<D, 0> {
 public:
-    Mean(std::optional<std::shared_ptr<CNode<D, K>>> a, std::weak_ptr<Tensor<D, 0>> r, const std::array<long, K> &shape)
-            : CNode<D, 0>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a}), std::array<long, 0> {}, r), a(a), shape(shape) {}
+    Mean(const std::optional<std::shared_ptr<CNode<D, K>>> &a,
+         const std::shared_ptr<Tensor<D, 0>> &r, const std::array<long, K> &shape)
+            : CNode<D, 0>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a}), r), a(a), shape(shape) {}
 
-    static std::shared_ptr<Tensor<D, 0>> mean(std::shared_ptr<Tensor<D, K>> a) {
+    static std::shared_ptr<Tensor<D, 0>> mean(const std::shared_ptr<Tensor<D, K>> &a) {
         auto result = std::make_shared<Tensor<D, 0>>(a->eTensor->mean(), std::array<long, 0> {});
         if (a->needsGradient())
             result->setGradFn(std::make_shared<Mean<D, K>>(a->gradFn, result, a->eTensor->dimensions()));

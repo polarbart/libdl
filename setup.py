@@ -3,6 +3,8 @@ import re
 import sys
 import platform
 import subprocess
+import zipfile
+
 
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
@@ -68,3 +70,11 @@ setup(
     # packages=[os.path.join('src', 'pylibdl')],
     zip_safe=False,
 )
+
+if os.path.exists('dist') and any(x == 'bdist_egg' for x in sys.argv):
+    print('installing to current dir')
+    eggs = [x for x in os.listdir('dist') if x[-4:] == '.egg']
+    if len(eggs) > 0:
+        with zipfile.ZipFile(os.path.join('dist', eggs[0]), 'r') as zip_ref:
+            zip_ref.extractall('')
+

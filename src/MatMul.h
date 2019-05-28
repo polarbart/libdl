@@ -14,13 +14,12 @@ template <typename D, int RA, int RB>
 class MatMul : public CNode<D, RA + RB - 2> {
 
 public:
-    MatMul(std::shared_ptr<Tensor<D, RA>> a,
-            std::shared_ptr<Tensor<D, RB>> b,
-            const std::array<long, RA + RB - 2> &d,
-            std::weak_ptr<Tensor<D, RA + RB - 2>> t)
-    : CNode<D, RA + RB - 2>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a->gradFn, b->gradFn}), d, t), a(a->eTensor), b(b->eTensor), ca(a->gradFn), cb(b->gradFn) {}
+    MatMul(const std::shared_ptr<Tensor<D, RA>> &a,
+           const std::shared_ptr<Tensor<D, RB>> &b,
+           const std::shared_ptr<Tensor<D, RA + RB - 2>> &t)
+    : CNode<D, RA + RB - 2>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a->gradFn, b->gradFn}), t), a(a->eTensor), b(b->eTensor), ca(a->gradFn), cb(b->gradFn) {}
 
-    static std::shared_ptr<Tensor<D, RA + RB - 2>> matmul(std::shared_ptr<Tensor<D, RA>> a,std::shared_ptr<Tensor<D, RB>> b) {
+    static std::shared_ptr<Tensor<D, RA + RB - 2>> matmul(const std::shared_ptr<Tensor<D, RA>> &a, const std::shared_ptr<Tensor<D, RB>> &b) {
         std::array<long, RA + RB - 2> shape {};
         std::copy_n(std::begin(a->eTensor->dimensions()), RA - 1, std::begin(shape));
         std::copy_n(std::begin(b->eTensor->dimensions()) + 1, RB - 1, std::begin(shape) + RA - 1);
@@ -29,7 +28,7 @@ public:
         auto result = std::make_shared<Tensor<D, RA + RB - 2>>(t, shape);
 
         if (a->needsGradient() || b->needsGradient())
-            result->setGradFn(std::make_shared<MatMul<D, RA, RB>>(a, b, shape, result));
+            result->setGradFn(std::make_shared<MatMul<D, RA, RB>>(a, b, result));
         return result;
     }
 
