@@ -14,6 +14,10 @@
 #include "Mean.h"
 #include "LeakyRelu.h"
 #include "Relu.h"
+#include "Conv2D.h"
+#include "MaxPool2D.h"
+#include "Reshape.h"
+#include "CrossEntropyWithLogits.h"
 
 template<typename D, int RA, int RB>
 void init_Module2(py::module &m, py::class_<Tensor<D, RA>, std::shared_ptr<Tensor<D, RA>>> tensor) {
@@ -23,6 +27,8 @@ void init_Module2(py::module &m, py::class_<Tensor<D, RA>, std::shared_ptr<Tenso
     tensor.def("__sub__", &Sub<D, RA, RB>::sub);
     if constexpr (RA > 0 && RB > 0 && (RA + RB - 2) > 0 && (RA + RB - 2) <= 5)
         m.def("matmul", &MatMul<D, RA, RB>::matmul);
+    if constexpr (RB > 0)
+        m.def("reshape", &Reshape<D, RA, RB>::reshape);
 }
 
 template<typename D, int R>
@@ -33,7 +39,7 @@ void init_Module1(py::module &m) {
             .def("numpy", [](const Tensor<D, R> &t) {return std::static_pointer_cast<ETensor<D, R>>(t.eTensor)->array;})
             .def_readwrite("requires_grad", &Tensor<D, R>::requiresGrad)
             .def("backward", &Tensor<D, R>::backward, py::arg("v") = 1)
-            .def("grad", [](const Tensor<D, R> &t) {std::cout << t.grad.use_count() << std::endl; return std::static_pointer_cast<ETensor<D, R>>(t.grad)->array;})
+            .def("grad", [](const Tensor<D, R> &t) {return std::static_pointer_cast<ETensor<D, R>>(t.grad)->array;})
             .def("zeroGrad", &Tensor<D, R>::zeroGrad)
             .def("applyGradient", &Tensor<D, R>::applyGradient)
             .def("__pow__", &Pow<D, R>::pow);
@@ -47,12 +53,17 @@ void init_Module1(py::module &m) {
         m.def("mean", &MeanAlongAxis<D, R>::mean);
         m.def("sum", &Sum<D, R>::sum);
         m.def("mean", &Mean<D, R>::mean);
+        m.def("crossEntropyWithLogits", &CrossEntropyWithLogits<D, R>::crossEntropyWithLogits);
+    }
+    if constexpr (R == 0) {
+        m.def("conv2d", &Conv2D<D>::conv2d);
+        m.def("maxpool2d", &MaxPool2D<D>::maxpool2d);
     }
     init_Module2<D, R, 0>(m, tensor);
     init_Module2<D, R, 1>(m, tensor);
     init_Module2<D, R, 2>(m, tensor);
-    //init_Module2<D, R, 3>(m);
-    //init_Module2<D, R, 4>(m);
+    init_Module2<D, R, 3>(m, tensor);
+    init_Module2<D, R, 4>(m, tensor);
     //init_Module2<D, R, 5>(m);
 }
 
@@ -60,7 +71,7 @@ PYBIND11_MODULE(libdl, m) {
     init_Module1<float, 0>(m);
     init_Module1<float, 1>(m);
     init_Module1<float, 2>(m);
-    //init_Module1<float, 3>(m);
-    //init_Module1<float, 4>(m);
+    init_Module1<float, 3>(m);
+    init_Module1<float, 4>(m);
     //init_Module1<float, 5>(m);
 }

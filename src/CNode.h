@@ -17,8 +17,15 @@ class Tensor;
 template <typename D, int R>
 class CNode : public CNodeBase {
 public:
+
+    void emptyGrad() {
+        grad = std::make_shared<ETensor<D, R>>(shape);
+        resetGrad = false;
+    }
+
     template <typename Derived>
     void addGrad(const Derived &g) {
+        Eigen::Tensor<D, R> ttt = g;
         if (resetGrad) {
             if (grad.use_count() == 0) {
                 auto p = t.lock();
@@ -38,9 +45,9 @@ public:
     }
 
     std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> grad;
+    const std::array<long, R> shape;
 
 protected:
-    const std::array<long, R> shape;
     CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::shared_ptr<Tensor<D, R>> &t) : CNodeBase(p), shape(t->eTensor->dimensions()), t(t) {}
 
     void finishComputeGradient() {

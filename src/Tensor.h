@@ -38,6 +38,11 @@ public:
               gradFn(std::nullopt),
               requiresGrad(requiresGrad) {}
 
+    explicit Tensor(const std::array<long, R> shape, bool requiresGrad = false)
+            : eTensor(std::make_shared<ETensor<D, R>>(shape)),
+              gradFn(std::nullopt),
+              requiresGrad(requiresGrad) {}
+
     static std::shared_ptr<Tensor<D, R>> fromNumpy(const py::array_t<D, py::array::f_style> &array, bool requiresGrad = false) {
         auto t = std::make_shared<Tensor<D, R>>(array, requiresGrad);
         if (requiresGrad)
@@ -60,7 +65,7 @@ public:
 
     void applyGradient(D lr) {
         if (grad.use_count() > 0)
-            *eTensor -= grad->constant(lr) + *grad;
+            *eTensor -= grad->constant(lr) * *grad;
     }
 
     void addGrad(const std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> &g) {

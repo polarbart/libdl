@@ -22,13 +22,13 @@ public:
             if constexpr (RB < RA) {
                 std::array<int, RA> reshape{};
                 std::array<int, RA> broadcast{};
-                for (int i = 0; i < RA - RB; ++i) {
+                for (int i = 0; i < RB; ++i) {
+                    reshape[i] = b->eTensor->dimension(i);
+                    broadcast[i] = 1;
+                }
+                for (int i = RB; i < RA; ++i) {
                     reshape[i] = 1;
                     broadcast[i] = a->eTensor->dimension(i);
-                }
-                for (int i = RA - RB; i < RA; ++i) {
-                    reshape[i] = b->eTensor->dimension(i - RB);
-                    broadcast[i] = 1;
                 }
                 result = std::make_shared<Tensor<D, RA>>(*a->eTensor - b->eTensor->reshape(reshape).broadcast(broadcast), a->eTensor->dimensions());
             } else
@@ -47,7 +47,7 @@ public:
             if constexpr (RB < RA) {
                 std::array<int, RA - RB> sum{};
                 for (int i = 0; i < RA - RB; ++i)
-                    sum[i] = i;
+                    sum[i] = RB + i;
                 b.value()->addGrad(-CNode<D, RA>::grad->sum(sum));
             } else
                 b.value()->addGrad(-(*CNode<D, RA>::grad));
