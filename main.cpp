@@ -12,25 +12,34 @@
 #include "src/MatMul.h"
 */
 using namespace std;
-
-//#define forward(x) Sigmoid<float, 2>::sigmoid(Add<float, 2, 1>::add(Matmul<float, 2, 1>::matmul(Sigmoid<float, 2>::sigmoid(Add<float, 2, 1>::add(Matmul<float, 2, 2>::matmul(x, W1), B1)), W2), B2))
+#define R 4
+#define D float
 
 int main() {
-    auto t = Eigen::Tensor<float, 0>();
-    t.setConstant(2);
-    cout << t << endl;
-    cout << t.reshape(std::array<int, 2> {1, 1}).broadcast(std::array<int, 2> {2, 2}) << endl;
-    cout << t << endl;
-    // auto W1 = std::make_shared<Tensor<float, 2>>(std::shared_ptr<float[]>(new float[4] {.05, .0009, -.04, -.1}), std::array<long, 2> {2, 2}, true);
-    /*auto B1 = std::make_shared<Tensor<float, 1>>(std::shared_ptr<float[]>(new float[2] {0, 0}), std::array<long, 1> {2}, true);
-    auto W2 = std::make_shared<Tensor<float, 2>>(std::shared_ptr<float[]>(new float[2] {.051, -.045}), std::array<long, 2> {2, 1}, true);
-    auto B2 = std::make_shared<Tensor<float, 1>>(std::shared_ptr<float[]>(new float[1] {0}), std::array<long, 1> {1}, true);
+    int padding = 0;
 
-    auto x = std::make_shared<Tensor<float, 2>>(std::shared_ptr<float[]>(new float[8] {0, 0, 1, 1, 0, 1, 0, 1}), std::array<long, 2> {4, 2});
-    auto y = std::make_shared<Tensor<float, 2>>(std::shared_ptr<float[]>(new float[4] {0, 1, 1, 0}), std::array<long, 2> {4, 1});
+    Eigen::Tensor<D, 1> t(8);
+    t.setValues({0,1,2,3,4,5,6,7});//,8,9,10,11,12,13,14,15});
+    Eigen::Tensor<D, R> a = t.reshape(Eigen::array<long, R> {2, 2, 1, 2});
+    Eigen::Tensor<D, R> grad = a;
 
-    cout << x << endl;
-    cout << y << endl;
+    Eigen::array<Eigen::IndexPair<int>, R> ePadding{
+            Eigen::IndexPair<int>(padding, padding),
+            Eigen::IndexPair<int>(padding, padding),
+            Eigen::IndexPair<int>(0, 0),
+            Eigen::IndexPair<int>(0, 0),
+    };
+    Eigen::Tensor<D, R> padded = a.pad(ePadding);
 
-*/
+    Eigen::array<ptrdiff_t, R> patchDims {grad.dimension(0), grad.dimension(1), 1, a.dimension(3)};
+    Eigen::Tensor<D, R+1> patches = padded.extract_patches(patchDims);
+
+    Eigen::array<long, R-1> reshape {patchDims[0]*patchDims[1], patchDims[3], a.dimension(2)};
+    Eigen::Tensor<D, R-1> im2col = patches.reshape(reshape);
+    Eigen::Tensor<D, 2> i2cFilter = grad.sum(Eigen::array<int, 1> {3}).reshape(Eigen::array<long, 2> {reshape[0], grad.dimension(2)});
+    Eigen::Tensor<D, R-1> conv = i2cFilter.contract(im2col, Eigen::array<Eigen::IndexPair<int>, 1> {Eigen::IndexPair<int>(0, 0)});
+
+    Eigen::array<int, R-1> shuffle {2, 0, 1};
+    Eigen::array<long, R+1> reshape2 {1,1, a.dimension(2), grad.dimension(2), a.dimension(3)};
+    std::cout << conv.shuffle(shuffle).reshape(reshape2).sum(Eigen::array<int, 1> {4}).eval() << std::endl;
 }

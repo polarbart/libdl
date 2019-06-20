@@ -29,7 +29,7 @@ endif()
 
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Catch2)
-add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Eigen)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/pybind11)
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog)
 

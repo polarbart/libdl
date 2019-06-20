@@ -4,6 +4,7 @@
 
 #ifndef LIBDL_CNODE_H
 #define LIBDL_CNODE_H
+#define EIGEN_USE_THREADS
 
 #include <memory>
 #include <vector>
@@ -25,7 +26,8 @@ public:
 
     template <typename Derived>
     void addGrad(const Derived &g) {
-        Eigen::Tensor<D, R> ttt = g;
+        static Eigen::ThreadPool pool(8);
+        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
         if (resetGrad) {
             if (grad.use_count() == 0) {
                 auto p = t.lock();
@@ -37,7 +39,7 @@ public:
                 *grad = g;
             resetGrad = false;
         } else
-            *grad += g;
+            grad->device(myDevice) += g;
     }
 
     void zeroGrad() {

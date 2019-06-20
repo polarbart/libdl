@@ -31,12 +31,12 @@ public:
 
     template <typename OtherDerived>
     explicit ETensor(const OtherDerived &t, const std::array<long, R> &d)
-        : Eigen::TensorMap<Eigen::Tensor<D, R>>(new D[std::accumulate(std::begin(d), std::end(d), 1, std::multiplies<>())], d){
+        : Eigen::TensorMap<Eigen::Tensor<D, R>>(new D[std::accumulate(std::begin(d), std::end(d), 1, std::multiplies<>())], d) {
 
         static Eigen::ThreadPool pool(8);
-        static Eigen::ThreadPoolDevice my_device(&pool, 8);
+        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
 
-        Eigen::TensorMap<Eigen::Tensor<D, R>>::device(my_device) = t;
+        Eigen::TensorMap<Eigen::Tensor<D, R>>::device(myDevice) = t;
         py::capsule c(Eigen::TensorMap<Eigen::Tensor<D, R>>::data(), [](void *f) {
             D *foo = reinterpret_cast<D*>(f);
             delete[] foo;
@@ -49,6 +49,9 @@ public:
     py::array_t<D, py::array::f_style> array;
 
 private:
+
+
+
     static Eigen::TensorMap<Eigen::Tensor<D, R>> toTensorMap(py::array_t<D, py::array::f_style> a) {
         auto info = a.request(true);
         std::array<long, R> shape;

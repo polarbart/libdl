@@ -4,6 +4,7 @@
 
 #ifndef LIBDL_TENSOR_H
 #define LIBDL_TENSOR_H
+#define EIGEN_USE_THREADS
 
 #include <iostream>
 #include <memory>
@@ -64,15 +65,19 @@ public:
 
 
     void applyGradient(D lr) {
+        static Eigen::ThreadPool pool(8);
+        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
         if (grad.use_count() > 0)
-            *eTensor -= grad->constant(lr) * *grad;
+            eTensor->device(myDevice) -= grad->constant(lr) * *grad;
     }
 
     void addGrad(const std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> &g) {
+        static Eigen::ThreadPool pool(8);
+        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
         if (grad.use_count() == 0)
             grad = g;
         else if (grad != g)
-            *grad += *g;
+            grad->device(myDevice) += *g;
     }
 
     void backward(D v = 1) {
