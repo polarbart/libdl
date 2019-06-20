@@ -11,6 +11,6 @@
 See [XOR.ipynb](XOR.ipynb) or [XOR.py](XOR.py)
 
 ## MNIST
-See [MNIST.ipynb](XOR.ipynb)
+See [MNIST.ipynb](MNIST.ipynb)
 
 Training and testing takes about 30 seconds. 
