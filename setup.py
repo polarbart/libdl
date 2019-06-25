@@ -67,9 +67,12 @@ setup(
     long_description='',
     ext_modules=[CMakeExtension('libdl')],
     cmdclass=dict(build_ext=CMakeBuild),
-    # packages=[os.path.join('src', 'pylibdl')],
+    #packages=find_packages(),
     zip_safe=False,
+    install_requires=['numpy']
 )
+
+exit()
 
 if os.path.exists('dist') and any(x == 'bdist_egg' for x in sys.argv):
     print('installing to current dir')

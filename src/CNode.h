@@ -36,7 +36,7 @@ public:
                 } else
                     grad = std::make_shared<ETensor<D, R>>(g, shape);
             } else
-                *grad = g;
+                grad->device(myDevice) = g;
             resetGrad = false;
         } else
             grad->device(myDevice) += g;

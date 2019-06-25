@@ -18,6 +18,8 @@
 #include "MaxPool2D.h"
 #include "Reshape.h"
 #include "CrossEntropyWithLogits.h"
+#include "BatchNorm2D.h"
+#include "Adam.h"
 
 template<typename D, int RA, int RB>
 void init_Module2(py::module &m, py::class_<Tensor<D, RA>, std::shared_ptr<Tensor<D, RA>>> tensor) {
@@ -40,24 +42,27 @@ void init_Module1(py::module &m) {
             .def_readwrite("requires_grad", &Tensor<D, R>::requiresGrad)
             .def("backward", &Tensor<D, R>::backward, py::arg("v") = 1)
             .def("grad", [](const Tensor<D, R> &t) {return std::static_pointer_cast<ETensor<D, R>>(t.grad)->array;})
-            .def("zeroGrad", &Tensor<D, R>::zeroGrad)
-            .def("applyGradient", &Tensor<D, R>::applyGradient)
-            .def("__pow__", &Pow<D, R>::pow);
+            .def("zero_grad", &Tensor<D, R>::zeroGrad)
+            .def("apply_gradient", &Tensor<D, R>::applyGradient)
+            .def("__pow__", &Pow<D, R>::pow)
+            .def_property_readonly("shape", [](const Tensor<D, R> &t){return static_cast<std::array<long, R>>(t.eTensor->dimensions());});
     m.def("sigmoid", &Sigmoid<D, R>::sigmoid);
-    m.def("leakyRelu", &LeakyRelu<D, R>::leakyRelu);
+    m.def("leaky_relu", &LeakyRelu<D, R>::leakyRelu);
     m.def("relu", &Relu<D, R>::relu);
     m.def("sigmoid", &Sigmoid<D, R>::sigmoid);
     m.def("pow", &Pow<D, R>::pow);
+    m.def("apply_adam", &Adam<D, R>::applyAdam);
     if constexpr (R > 0) {
         m.def("sum", &SumAlongAxis<D, R>::sum);
         m.def("mean", &MeanAlongAxis<D, R>::mean);
         m.def("sum", &Sum<D, R>::sum);
         m.def("mean", &Mean<D, R>::mean);
-        m.def("crossEntropyWithLogits", &CrossEntropyWithLogits<D, R>::crossEntropyWithLogits);
+        m.def("cross_entropy_with_logits", &CrossEntropyWithLogits<D, R>::crossEntropyWithLogits);
     }
     if constexpr (R == 0) {
-        m.def("conv2d", &Conv2D<D>::conv2d);
-        m.def("maxpool2d", &MaxPool2D<D>::maxpool2d);
+        m.def("conv_2d", &Conv2D<D>::conv2d);
+        m.def("maxpool_2d", &MaxPool2D<D>::maxpool2d);
+        m.def("batch_norm_2d", &BatchNorm2D<D>::batchNorm2d);
     }
     init_Module2<D, R, 0>(m, tensor);
     init_Module2<D, R, 1>(m, tensor);

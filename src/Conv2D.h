@@ -41,22 +41,23 @@ public:
      * result (h', w', c', n)
      * */
     static std::shared_ptr<Tensor<D, R>> conv2d(const std::shared_ptr<Tensor<D, R>> &a, const std::shared_ptr<Tensor<D, R>> &filter, const std::shared_ptr<Tensor<D, 1>> &bias, int padding) {
-        std::array<long, R> newDims{
+
+        std::array<long, R> newDims {
                 (a->eTensor->dimension(0) - filter->eTensor->dimension(0) + 1 + 2 * padding),
                 (a->eTensor->dimension(1) - filter->eTensor->dimension(1) + 1 + 2 * padding),
                 filter->eTensor->dimension(3),
                 a->eTensor->dimension(3),
         };
 
-        Eigen::array<long, R> reshape {1, 1, bias->eTensor->dimension(0), 1};
-        Eigen::array<long, R> broadcast {newDims[0], newDims[1], 1, newDims[3]};
 
         auto r = myConvolution(*a->eTensor, *filter->eTensor, padding);
 
         std::shared_ptr<Tensor<D, R>> result;
-        if (bias != nullptr)
+        if (bias != nullptr) {
+            Eigen::array<long, R> reshape {1, 1, bias->eTensor->dimension(0), 1};
+            Eigen::array<long, R> broadcast {newDims[0], newDims[1], 1, newDims[3]};
             result = std::make_shared<Tensor<D, R>>(r + bias->eTensor->reshape(reshape).broadcast(broadcast), newDims);
-        else
+        } else
             result = std::make_shared<Tensor<D, R>>(r, newDims);
 
         if (a->needsGradient() || filter->needsGradient() || (bias != nullptr && bias->needsGradient())) {
@@ -82,7 +83,7 @@ public:
                     Eigen::IndexPair<int>(0, 0),
                     Eigen::IndexPair<int>(0, 0),
             };
-            auto padded = a->pad(ePadding);
+            auto padded = a->pad(ePadding).eval();
 
             Eigen::array<ptrdiff_t, R> patchDims {CNode<D, R>::grad->dimension(0), CNode<D, R>::grad->dimension(1), 1, a->dimension(3)};
             auto patches = padded.extract_patches(patchDims);
@@ -94,7 +95,7 @@ public:
 
             Eigen::array<int, R-1> shuffle {2, 0, 1};
             Eigen::array<long, R+1> reshape2 {filter->dimension(0), filter->dimension(1), a->dimension(2), CNode<D, R>::grad->dimension(2), a->dimension(3)};
-            cfilter.value()->addGrad(conv.shuffle(shuffle).reshape(reshape2).mean(Eigen::array<int, 1> {4}));
+            cfilter.value()->addGrad(conv.shuffle(shuffle).eval().reshape(reshape2).mean(Eigen::array<int, 1> {4}));
         }
         if (cbias.has_value()) {
             cbias.value()->addGrad(CNode<D, R>::grad->sum(Eigen::array<int, 3> {0, 1, 3}));
@@ -121,7 +122,8 @@ private:
                 Eigen::IndexPair<int>(0, 0),
                 Eigen::IndexPair<int>(0, 0)
         };
-        auto padded = a.pad(ePadding);
+        //auto padded = a.pad(ePadding);
+        auto padded = a.pad(ePadding).eval();
 
         Eigen::array<ptrdiff_t, R> patchDims{filter.dimension(0), filter.dimension(1), a.dimension(2), a.dimension(3)};
         auto patches = padded.extract_patches(patchDims);
@@ -136,7 +138,7 @@ private:
 
         Eigen::array<int, R - 1> shuffle{2, 0, 1};
         Eigen::array<long, R> reshape2{newHeight, newWidth, filter.dimension(3), a.dimension(3)};
-        return conv.shuffle(shuffle).reshape(reshape2);
+        return conv.shuffle(shuffle).eval().reshape(reshape2);
     }
 };
 
