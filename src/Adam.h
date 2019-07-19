@@ -18,11 +18,20 @@ public:
             D b1,
             D b2,
             D eps) {
-        *m->eTensor = m->eTensor->constant(b1) * *m->eTensor + m->eTensor->constant(1 - b1) * *param->grad;
-        *v->eTensor = v->eTensor->constant(b2) * *v->eTensor + v->eTensor->constant(1 - b2) * param->grad->square();
+        
+        if (param->grad.use_count() == 0)
+            return;
+
+        // #efficient
+        static Eigen::ThreadPool pool(8);
+        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
+
+        m->eTensor->device(myDevice) = m->eTensor->constant(b1) * *m->eTensor + m->eTensor->constant(1 - b1) * *param->grad;
+        v->eTensor->device(myDevice) = v->eTensor->constant(b2) * *v->eTensor + v->eTensor->constant(1 - b2) * param->grad->square();
+
         auto mh = *m->eTensor / m->eTensor->constant(1 - b1);
         auto vh = *v->eTensor / v->eTensor->constant(1 - b2);
-        *param->eTensor -= mh.constant(lr) * mh / (vh.sqrt() + vh.constant(eps));
+        param->eTensor->device(myDevice) -= mh.constant(lr) * mh / (vh.sqrt() + vh.constant(eps));
     }
 
 };

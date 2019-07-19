@@ -15,6 +15,7 @@ public:
             : CNode<D, std::max(RA, RB)>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a, b}), t), a(a), b(b) {};
 
     static std::shared_ptr<Tensor<D, std::max(RA, RB)>> sub(const std::shared_ptr<Tensor<D, RA>> &a, const std::shared_ptr<Tensor<D, RB>> &b) {
+        // TODO fix order dependence
         if constexpr (RB > RA)
             return Sub<D, RB, RA>::sub(b, a);
         else {

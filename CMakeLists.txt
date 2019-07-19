@@ -35,8 +35,8 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog)
 
 set(TEST_TARGET libdl)
 
-pybind11_add_module(${TEST_TARGET} src/Tensor.cpp src/Add.cpp src/CNode.cpp src/CNodeBase.cpp src/Leaf.cpp src/ETensor.cpp src/Sub.cpp src/MatMul.cpp src/Utils.cpp src/Sigmoid.cpp src/Pow.cpp src/SumAlongAxis.cpp src/MeanAlongAxis.cpp src/Sum.cpp src/Mean.cpp src/LeakyRelu.cpp src/Relu.cpp src/Conv2D.cpp src/MaxPool2D.cpp src/Reshape.cpp src/Softmax.cpp src/CrossEntropyWithLogits.cpp src/BatchNorm2D.cpp src/Adam.cpp)
-# add_executable(${TEST_TARGET} main.cpp)# src/Tensor.cpp src/Add.cpp src/Sub.cpp src/MatMul.cpp src/CNode.cpp src/CNodeBase.cpp src/Utils.cpp src/Leaf.cpp src/Sigmoid.cpp src/Pow.cpp src/Sum.cpp)
+pybind11_add_module(${TEST_TARGET} src/Tensor.cpp src/Add.cpp src/CNode.cpp src/CNodeBase.cpp src/Leaf.cpp src/ETensor.cpp src/Sub.cpp src/MatMul.cpp src/Utils.cpp src/Sigmoid.cpp src/Pow.cpp src/SumAlongAxis.cpp src/MeanAlongAxis.cpp src/Sum.cpp src/Mean.cpp src/LeakyRelu.cpp src/Relu.cpp src/Conv2D.cpp src/MaxPool2D.cpp src/Reshape.cpp src/Softmax.cpp src/CrossEntropyWithLogits.cpp src/BatchNorm2D.cpp src/Adam.cpp src/Linear.cpp src/Globals.cpp)
+#add_executable(${TEST_TARGET} main.cpp)# src/Tensor.cpp src/Add.cpp src/Sub.cpp src/MatMul.cpp src/CNode.cpp src/CNodeBase.cpp src/Utils.cpp src/Leaf.cpp src/Sigmoid.cpp src/Pow.cpp src/Sum.cpp)
 target_link_libraries(${TEST_TARGET} PRIVATE Catch2::Catch2 Eigen3::Eigen pybind11::pybind11 spdlog::spdlog)
 
 

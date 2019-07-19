@@ -15,10 +15,11 @@ class Leaf : public CNode<D, R> {
 public:
     explicit Leaf(const std::shared_ptr<Tensor<D, R>> &t) : CNode<D, R>(std::vector<std::shared_ptr<CNodeBase>> {}, t) {}
     void computeGradients() override {
+
         CNode<D, R>::resetGrad = true;
-        if (CNode<D, R>::t.expired())
+        if (CNode<D, R>::holder.expired())
             return;
-        auto p = CNode<D, R>::t.lock();
+        auto p = CNode<D, R>::holder.lock();
         if (p->requiresGrad)
             p->addGrad(CNode<D, R>::grad);
     }

@@ -41,7 +41,7 @@ public:
 
     explicit Tensor(const std::array<long, R> shape, bool requiresGrad = false)
             : eTensor(std::make_shared<ETensor<D, R>>(shape)),
-              gradFn(std::nullopt),
+              gradFn(std::nullopt), // TODO leaf node
               requiresGrad(requiresGrad) {}
 
     static std::shared_ptr<Tensor<D, R>> fromNumpy(const py::array_t<D, py::array::f_style> &array, bool requiresGrad = false) {
@@ -74,15 +74,17 @@ public:
     void addGrad(const std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> &g) {
         static Eigen::ThreadPool pool(8);
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
-        if (grad.use_count() == 0)
+        if (grad.use_count() == 0) {
             grad = g;
-        else if (grad != g)
+        } else if (grad != g)
             grad->device(myDevice) += *g;
     }
 
     void backward(D v = 1) {
-        if (!gradFn.has_value())
+        if (!gradFn.has_value()) {
             std::cout << "no grad is computed" << std::endl;
+            return;
+        }
         gradFn.value()->addGrad(eTensor->constant(v));
 
         auto head = gradFn.value();

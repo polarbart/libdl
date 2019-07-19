@@ -15,14 +15,13 @@ template <typename D>
 class BatchNorm2D : public CNode<D, R> {
 
 public:
-    template <typename DerivedOther, typename DerivedOther2, typename DerivedOther3>
     BatchNorm2D(
             const std::shared_ptr<Tensor<D, R>> &x,
             const std::shared_ptr<Tensor<D, 1>> &gamma,
             const std::shared_ptr<Tensor<D, 1>> &beta,
-            const DerivedOther &mean,
-            const DerivedOther2 &var,
-            const DerivedOther3 &xh,
+            Eigen::Tensor<D, 1> &mean,
+            Eigen::Tensor<D, 1> &var,
+            Eigen::Tensor<D, R> &xh,
             D epsilon,
             const std::shared_ptr<Tensor<D, R>> &result)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn, gamma->gradFn, beta->gradFn}), result),
@@ -31,19 +30,18 @@ public:
             cbeta(beta->gradFn),
             x(x->eTensor),
             gamma(gamma->eTensor),
-            mean(mean),
-            var(var),
+            mean(std::move(mean)), // std::move richtig???
+            var(std::move(var)),
             epsilon(epsilon),
             useRunningAvg(false),
-            xh(xh){}
+            xh(std::move(xh)) {}
 
-    template <typename DerivedOther>
     BatchNorm2D(
             const std::shared_ptr<Tensor<D, R>> &x,
             const std::shared_ptr<Tensor<D, 1>> &gamma,
             const std::shared_ptr<Tensor<D, 1>> &beta,
             const std::shared_ptr<Tensor<D, 1>> &runningVar,
-            const DerivedOther &xh,
+            Eigen::Tensor<D, R> &xh,
             D epsilon,
             const std::shared_ptr<Tensor<D, R>> &result)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn, gamma->gradFn, beta->gradFn}), result),
@@ -55,7 +53,7 @@ public:
               runningVar(runningVar->eTensor),
               epsilon(epsilon),
               useRunningAvg(true),
-              xh(xh){}
+              xh(std::move(xh)) {}
 
     static std::shared_ptr<Tensor<D, R>> batchNorm2d(
             const std::shared_ptr<Tensor<D, R>> &x,
@@ -67,14 +65,19 @@ public:
             D epsilon,
             bool useRunningAvg) {
 
-        const Eigen::array<long, R> reshape {1, 1, x->eTensor->dimension(2), 1};
-        const Eigen::array<long, R> broadcast {x->eTensor->dimension(0), x->eTensor->dimension(1), 1, x->eTensor->dimension(3)};
-        const Eigen::array<int, 3> meanDims {0, 1, 3};
+        //  #efficient
+        const Eigen::array<long, R> reshape {x->eTensor->dimension(0), 1, 1, 1};
+        const Eigen::array<long, R> broadcast {1, x->eTensor->dimension(1), x->eTensor->dimension(2), x->eTensor->dimension(3)};
+        const Eigen::array<int, 3> meanDims {1, 2, 3};
+
+        static Eigen::ThreadPool pool(8);
+        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
 
         std::shared_ptr<Tensor<D, R>> result;
 
         if (useRunningAvg) {
-            auto xh = (*x->eTensor - runningMean->eTensor->reshape(reshape).broadcast(broadcast)) / ((*runningVar->eTensor + runningVar->eTensor->constant(epsilon)).sqrt().reshape(reshape).broadcast(broadcast));
+            Eigen::Tensor<D, R> xh(x->eTensor->dimensions());
+            xh.device(myDevice) = (*x->eTensor - runningMean->eTensor->reshape(reshape).broadcast(broadcast)) / ((*runningVar->eTensor + runningVar->eTensor->constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
             auto y = gamma->eTensor->reshape(reshape).broadcast(broadcast) * xh + beta->eTensor->reshape(reshape).broadcast(broadcast);
 
             result = std::make_shared<Tensor<D, R>>(y, x->eTensor->dimensions());
@@ -83,17 +86,19 @@ public:
                 result->setGradFn(std::make_shared<BatchNorm2D<D>>(x, gamma, beta, runningVar, xh, epsilon, result));
 
         } else {
+            Eigen::Tensor<D, 1> mean(x->eTensor->dimension(0)), var(x->eTensor->dimension(0));
+            mean.device(myDevice) = x->eTensor->mean(meanDims);
+            auto xm = (*x->eTensor - mean.reshape(reshape).broadcast(broadcast)).eval();
+            var.device(myDevice) = xm.square().mean(meanDims);
 
-            auto mean = x->eTensor->mean(meanDims);
-            auto var = (*x->eTensor - mean.reshape(reshape).broadcast(broadcast)).square().mean(meanDims);
-
-            auto xh = (*x->eTensor - mean.reshape(reshape).broadcast(broadcast)) / ((var + var.constant(epsilon)).sqrt().reshape(reshape).broadcast(broadcast));
+            Eigen::Tensor<D, R> xh(x->eTensor->dimensions());
+            xh.device(myDevice) = xm / ((var + var.constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
             auto y = gamma->eTensor->reshape(reshape).broadcast(broadcast) * xh + beta->eTensor->reshape(reshape).broadcast(broadcast);
 
             result = std::make_shared<Tensor<D, R>>(y, x->eTensor->dimensions());
 
-            *runningMean->eTensor = mean.constant(momentum) * mean + runningMean->eTensor->constant(momentum) * *runningMean->eTensor;
-            *runningVar->eTensor = var.constant(momentum) * var + runningVar->eTensor->constant(momentum) * *runningVar->eTensor;
+            runningMean->eTensor->device(myDevice) = mean.constant(momentum) * mean + runningMean->eTensor->constant(1 - momentum) * *runningMean->eTensor;
+            runningVar->eTensor->device(myDevice) = var.constant(momentum) * var + runningVar->eTensor->constant(1 - momentum) * *runningVar->eTensor;
 
             if (x->needsGradient() || gamma->needsGradient() || beta->needsGradient())
                 result->setGradFn(std::make_shared<BatchNorm2D<D>>(x, gamma, beta, mean, var, xh, epsilon, result));
@@ -103,20 +108,21 @@ public:
     }
 
     void computeGradients() override {
-        const Eigen::array<long, R> reshape {1, 1, x->dimension(2), 1};
-        const Eigen::array<long, R> broadcast {x->dimension(0), x->dimension(1), 1, x->dimension(3)};
-        const Eigen::array<int, 3> meanDims {0, 1, 3};
+        // #efficient
+        const Eigen::array<long, R> reshape {x->dimension(0), 1, 1, 1};
+        const Eigen::array<long, R> broadcast {1, x->dimension(1), x->dimension(2), x->dimension(3)};
+        const Eigen::array<int, 3> meanDims {1, 2, 3};
         if (cx.has_value()) {
             if (useRunningAvg) {
-                cx.value()->addGrad((*gamma / *runningVar).broadcast(broadcast).reshape(reshape) * *CNode<D, R>::grad);
+                cx.value()->addGrad((*gamma / (*runningVar + runningVar->constant(epsilon)).sqrt()).eval().reshape(reshape).broadcast(broadcast) * *CNode<D, R>::grad);
             } else {
-                auto rvpe = (var + var.constant(epsilon)).sqrt();
-                auto xmm = *x - mean.reshape(reshape).broadcast(broadcast);
-                int m = x->dimension(0) * x->dimension(1) * x->dimension(3);
+                auto rvpe = (var + var.constant(epsilon)).sqrt().eval();
+                auto xmm = (*x - mean.reshape(reshape).broadcast(broadcast)).eval();
+                int m = x->dimension(1) * x->dimension(2) * x->dimension(3);
 
-                auto dxh = gamma->reshape(reshape).broadcast(broadcast) * *CNode<D, R>::grad;
-                auto dv = (dxh * xmm).sum(meanDims) * var.constant(-.5) / rvpe.pow(3);
-                auto dm = -dxh.sum(meanDims) / rvpe + dv * xmm.mean(meanDims) * dv.constant(-2);
+                auto dxh = (gamma->reshape(reshape).broadcast(broadcast) * *CNode<D, R>::grad).eval();
+                auto dv = ((dxh * xmm).sum(meanDims) * var.constant(-.5) / rvpe.cube()).eval();
+                // auto dm = -dxh.sum(meanDims) / rvpe + dv * xmm.mean(meanDims) * dv.constant(-2);
                 auto dx = -dxh / rvpe.reshape(reshape).broadcast(broadcast)
                         + dv.reshape(reshape).broadcast(broadcast) * (xmm * xmm.constant(2./m) + xmm.constant(1./m));
                 cx.value()->addGrad(dx);

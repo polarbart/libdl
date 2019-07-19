@@ -1,3 +1,2 @@
-from .optim import *
-from .tensor import tensor
+from .tensor import tensor, _tensor_types
 from libdl import *

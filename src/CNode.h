@@ -29,13 +29,9 @@ public:
         static Eigen::ThreadPool pool(8);
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
         if (resetGrad) {
-            if (grad.use_count() == 0) {
-                auto p = t.lock();
-                if (!t.expired() && p->grad.use_count() > 0) {
-                    grad = p->grad;
-                } else
-                    grad = std::make_shared<ETensor<D, R>>(g, shape);
-            } else
+            if (grad.use_count() == 0)
+                grad = std::make_shared<ETensor<D, R>>(g, shape);
+            else
                 grad->device(myDevice) = g;
             resetGrad = false;
         } else
@@ -50,18 +46,18 @@ public:
     const std::array<long, R> shape;
 
 protected:
-    CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::shared_ptr<Tensor<D, R>> &t) : CNodeBase(p), shape(t->eTensor->dimensions()), t(t) {}
+    CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::shared_ptr<Tensor<D, R>> &holder) : CNodeBase(p), shape(holder->eTensor->dimensions()), holder(holder) {}
 
     void finishComputeGradient() {
-        if (t.expired())
+        if (holder.expired())
             return;
-        auto p = t.lock();
+        auto p = holder.lock();
         if (p->requiresGrad)
             p->addGrad(grad);
         p->gradFn = std::nullopt;
     }
 
-    std::weak_ptr<Tensor<D, R>> t;
+    std::weak_ptr<Tensor<D, R>> holder;
     bool resetGrad = true;
 };
 

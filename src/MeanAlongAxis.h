@@ -8,54 +8,59 @@
 
 #include "Tensor.h"
 #include "Utils.h"
-#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
-namespace py = pybind11;
-
-template <typename D, int R>
-class MeanAlongAxis : public CNode<D, R> {
+template <typename D, int RA, int RB>
+class MeanAlongAxis : public CNode<D, RA - RB> {
 public:
-    MeanAlongAxis(const std::optional<std::shared_ptr<CNode<D, R + 1>>> &a,
-                  const std::shared_ptr<Tensor<D, R>> &r,
-                  int axis,
-                  long size)
-                  : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a}), r), a(a), axis(axis), size(size) {}
+    MeanAlongAxis(const std::optional<std::shared_ptr<CNode<D, RA>>> &a,
+                  const std::shared_ptr<Tensor<D, RA - RB>> &r,
+                  const std::array<int, RB> &axis,
+                  const std::array<long, RA> &oldDimensions)
+                  : CNode<D, RA - RB>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a}), r), a(a), axis(axis), oldDimensions(oldDimensions) {}
 
-    static std::shared_ptr<Tensor<D, R - 1>> mean(const std::shared_ptr<Tensor<D, R>> &a, int axis) {
-        std::array<long, R - 1> shape {};
-        std::copy_n(std::begin(a->eTensor->dimensions()), axis, std::begin(shape));
-        std::copy_n(std::begin(a->eTensor->dimensions()) + axis + 1, R - axis - 1, std::begin(shape) + axis);
-        auto t = a->eTensor->mean(Eigen::array<int, 1>{axis});
-        auto result = std::make_shared<Tensor<D, R - 1>>(t, shape);
+    static std::shared_ptr<Tensor<D, RA - RB>> mean(const std::shared_ptr<Tensor<D, RA>> &a, const std::array<int, RB> &axis) {
+        std::array<long, RA - RB> newShape {};
+        for (int i = 0, j = 0; i < (RA - RB); j++)
+            if (notIn(j, axis))
+                newShape[i++] = a->eTensor->dimension(j);
+        auto result = std::make_shared<Tensor<D, RA - RB>>(a->eTensor->mean(axis), newShape);
         if (a->needsGradient())
-            result->setGradFn(std::make_shared<MeanAlongAxis<D, R - 1>>(a->gradFn, result, axis, a->eTensor->dimension(axis)));
+            result->setGradFn(std::make_shared<MeanAlongAxis<D, RA, RB>>(a->gradFn, result, axis, static_cast<std::array<long, RA>>(a->eTensor->dimensions())));
         return result;
     }
 
     void computeGradients() override {
         if (a.has_value()) {
-            std::array<int, R + 1> reshape;
-            std::array<int, R + 1> broadcast;
-            for (int i = 0; i < axis; ++i) {
-                reshape[i] = CNode<D, R>::grad->dimension(i);
-                broadcast[i] = 1;
+            std::array<int, RA> reshape;
+            std::array<int, RA> broadcast;
+            for (int i = 0; i < RA; i++) {
+                if (notIn(i, axis)) {
+                    reshape[i] = oldDimensions[i];
+                    broadcast[i] = 1;
+                } else {
+                    reshape[i] = 1;
+                    broadcast[i] = oldDimensions[i];
+                }
             }
-            reshape[axis] = 1;
-            broadcast[axis] = size;
-            for (int i = axis + 1; i < R + 1; ++i) {
-                reshape[i] = CNode<D, R>::grad->dimension(i - 1);
-                broadcast[i] = 1;
-            }
-            auto t = CNode<D, R>::grad->reshape(reshape).broadcast(broadcast);
-            a.value()->addGrad(t / t.constant(size));
+            int scale = std::accumulate(std::begin(broadcast), std::end(broadcast), 1, std::multiplies<>());
+            auto t = CNode<D, RA - RB>::grad->reshape(reshape).broadcast(broadcast);
+            a.value()->addGrad(t / t.constant(scale));
         }
-        CNode<D, R>::finishComputeGradient();
+        CNode<D, RA - RB>::finishComputeGradient();
     }
 
 private:
-    std::optional<std::shared_ptr<CNode<D, R + 1>>> a;
-    int axis;
-    long size;
+    std::optional<std::shared_ptr<CNode<D, RA>>> a;
+    std::array<int, RB> axis;
+    std::array<long, RA> oldDimensions;
+
+    static bool notIn(int a, const std::array<int, RB> &axis) {
+        for (auto i : axis)
+            if (a == i)
+                return false;
+        return true;
+    }
 };
 
 

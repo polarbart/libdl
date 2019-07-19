@@ -21,14 +21,18 @@ public:
             const std::shared_ptr<Tensor<D, 0>> &result) : CNode<D, 0>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn, y->gradFn}), result), cx(x->gradFn), cy(y->gradFn), softmax(softmax), y(y->eTensor) {}
 
     static std::shared_ptr<Tensor<D, 0>> crossEntropyWithLogits(const std::shared_ptr<Tensor<D, R>> &x, const std::shared_ptr<Tensor<D, R>> &y) {
-        Eigen::array<long, R> reshape;
-        std::copy_n(std::begin(x->eTensor->dimensions()), R, std::begin(reshape));
+        static Eigen::ThreadPool pool(8);
+        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
+
+        Eigen::array<long, R> reshape = x->eTensor->dimensions();
         reshape[0] = 1;
         Eigen::array<long, R> broadcast;
         broadcast.fill(1);
         broadcast[0] = x->eTensor->dimension(0);
-        auto i1 = (*x->eTensor - x->eTensor->maximum(Eigen::array<int, 1> {0}).reshape(reshape).broadcast(broadcast)).exp();
-        auto softmax = i1 / i1.sum(Eigen::array<int, 1> {0}).reshape(reshape).broadcast(broadcast);
+        auto i1 = (*x->eTensor - x->eTensor->maximum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast)).exp();
+
+        Eigen::Tensor<D, R> softmax(x->eTensor->dimensions());
+        softmax.device(myDevice) = i1 / i1.sum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast) + i1.constant(1e-8);
         auto mce = (-softmax.log() * *y->eTensor).mean();
         auto result = std::make_shared<Tensor<D, 0>>(mce * mce.constant(x->eTensor->dimension(0)), std::array<long, 0> {});
         if (x->needsGradient())
