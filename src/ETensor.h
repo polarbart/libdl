@@ -41,9 +41,8 @@ public:
             D *foo = reinterpret_cast<D*>(f);
             delete[] foo;
         });
-        std::array<long, R> shape {};
-        std::copy_n(std::begin(Eigen::TensorMap<Eigen::Tensor<D, R>>::dimensions()), R, std::begin(shape));
-        array = py::array_t<D, py::array::f_style>(shape, Eigen::TensorMap<Eigen::Tensor<D, R>>::data(), c);
+        array = py::array_t<D, py::array::f_style>(reinterpret_cast<std::array<long, R>>(Eigen::TensorMap<Eigen::Tensor<D, R>>::dimensions()),
+                Eigen::TensorMap<Eigen::Tensor<D, R>>::data(), c);
     }
 
     py::array_t<D, py::array::f_style> array;
@@ -53,8 +52,7 @@ private:
     static Eigen::TensorMap<Eigen::Tensor<D, R>> toTensorMap(py::array_t<D, py::array::f_style> a) {
         auto info = a.request(true);
         std::array<long, R> shape;
-        for (int i = 0; i < R; ++i)
-            shape[i] = info.shape[i];
+        std::copy_n(std::begin(info.shape), R, std::begin(shape));
         return Eigen::TensorMap<Eigen::Tensor<D, R>>(static_cast<D*>(info.ptr), shape);
     }
 };

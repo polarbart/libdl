@@ -12,9 +12,9 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <queue>
-#include "CNode.h"
+#include "ops/CNode.h"
 #include "ETensor.h"
-#include "Leaf.h"
+#include "ops/Leaf.h"
 
 
 namespace py = pybind11;
@@ -64,7 +64,7 @@ public:
     }
 
 
-    void applyGradient(D lr) {
+    void subGrad(D lr) {
         static Eigen::ThreadPool pool(8);
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
         if (grad.use_count() > 0)

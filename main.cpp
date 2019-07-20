@@ -33,15 +33,10 @@ void dialate(Eigen::Tensor<float, 2> &d, Eigen::Tensor<float, 2> &m, int stride)
 }
 
 int main() {
-    Eigen::Tensor<float, 3> m(1, 32, 32);
-    for (int i = 0; i < m.size(); i++)
-        m.data()[i] = i+1;
-    std::cout << m.chip(0, 0) << std::endl;
-    //Eigen::Tensor<float, 4> r = m.extract_image_patches(2, 2, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1, 0);
-    Eigen::Tensor<float, 4> r = m.extract_image_patches(5, 5, 1,1,1,1,2,2,2,3,2,3,0);
-    std::cout << r.dimension(3) << std::endl;
-    for (int i = 0; i < r.dimension(3); i++)
-        std::cout << r.chip(i, 3).chip(0, 0) << std::endl<<std::endl;
+    Eigen::Tensor<float, 2> a(2, 2);
+    Eigen::Tensor<float, 2> b = a;
+    std::cout << a << std::endl << b << std::endl;
+
 }
 
 /*
