@@ -1,6 +1,3 @@
-//
-// Created by superbabes on 16.06.19.
-//
 
 #ifndef LIBDL_CROSSENTROPYWITHLOGITS_H
 #define LIBDL_CROSSENTROPYWITHLOGITS_H
@@ -15,21 +12,21 @@ template <typename D>
 class CrossEntropyWithLogits : public CNode<D, 0> {
 
 public:
-    template <typename DerivedOther>
+
     CrossEntropyWithLogits(
-            const Eigen::Tensor<D, R> &softmax,
             const std::shared_ptr<Tensor<D, R>> &x,
             const std::shared_ptr<Tensor<D, R>> &y,
+            Eigen::Tensor<D, R> softmax,
             const std::shared_ptr<Tensor<D, 0>> &result)
             : CNode<D, 0>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn, y->gradFn}), result),
             cx(x->gradFn),
             cy(y->gradFn),
-            softmax(softmax),
+            softmax(std::move(softmax)),
             y(y->eTensor) {}
 
     /*
      * \brief apply softmax to x along the zero'th dimension
-     *        and then compute the mean cross entropy between x and y
+     *        then compute the mean cross entropy between x and y
      *
      * \param x two dimensional tensor on which softmax is applied
      * \param y one hot encoded tensor with the same shape as x
@@ -41,21 +38,23 @@ public:
             const std::shared_ptr<Tensor<D, R>> &y) {
 
         for (int i = 0; i < R; i++)
-            if (x->eTensor->dimenions(i) != y->eTensor->dimension(i))
-                throw std::invalid_argument("shapes mismatch");
+            if (x->eTensor->dimension(i) != y->eTensor->dimension(i))
+                throw std::invalid_argument("the shapes of x and y must match");
 
         #pragma omp parallel for
         for (int i = 0; i < y->eTensor->dimension(1); i++) {
             bool hasOne = false;
             for (int j = 0; j < y->eTensor->dimension(0); j++) {
-                if (y(j, i) == 1) {
+                if ((*y->eTensor)(j, i) == 1) {
                     if (hasOne)
-                        throw std::invalid_argument("second parameter is not one hot encoded");
+                        throw std::invalid_argument("y is not one hot encoded");
                     else
                         hasOne = true;
-                } else if (y(j, i) != 0)
-                    throw std::invalid_argument("second parameter is not one hot encoded");
+                } else if ((*y->eTensor)(j, i) != 0)
+                    throw std::invalid_argument("y is not one hot encoded");
             }
+            if (!hasOne)
+                throw std::invalid_argument("y is not one hot encoded");
         }
 
         static Eigen::ThreadPool pool(8);
@@ -73,7 +72,7 @@ public:
         auto mce = (-softmax.log() * *y->eTensor).mean();
         auto result = std::make_shared<Tensor<D, 0>>(mce * mce.constant(x->eTensor->dimension(0)), std::array<long, 0> {});
         if (x->needsGradient())
-            result->setGradFn(std::make_shared<CrossEntropyWithLogits<D>>(softmax, x, y, result));
+            result->setGradFn(std::make_shared<CrossEntropyWithLogits<D>>(x, y, std::move(softmax), result));
         return result;
     }
 

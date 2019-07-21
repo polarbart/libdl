@@ -1,6 +1,3 @@
-//
-// Created by polarbabe on 22.05.19.
-//
 
 #ifndef LIBDL_SIGMOID_H
 #define LIBDL_SIGMOID_H
@@ -11,25 +8,37 @@
 template <typename D, int R>
 class Sigmoid : public CNode<D, R> {
 public:
-    Sigmoid(const std::optional<std::shared_ptr<CNode<D, R>>> &a, const std::shared_ptr<Tensor<D, R>> &r)
-    : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a}), r), a(a), r(r->eTensor) {}
+    Sigmoid(
+            const std::optional<std::shared_ptr<CNode<D, R>>> &cx,
+            const std::shared_ptr<Tensor<D, R>> &result)
+            : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({cx}), result),
+            cx(cx),
+            result(result->eTensor) {}
 
-    static std::shared_ptr<Tensor<D, R>> sigmoid(const std::shared_ptr<Tensor<D, R>> &a) {
-        auto result = std::make_shared<Tensor<D, R>>(a->eTensor->sigmoid(), a->eTensor->dimensions());
-        if (a->needsGradient())
-            result->setGradFn(std::make_shared<Sigmoid<D, R>>(a->gradFn, result));
+    /*
+     * \brief applies the sigmoid function elementwise
+     *
+     * \param x tensor of any shape
+     *
+     * \return a new tensor with the same shape as x
+     * */
+    static std::shared_ptr<Tensor<D, R>> sigmoid(
+            const std::shared_ptr<Tensor<D, R>> &x) {
+        auto result = std::make_shared<Tensor<D, R>>(x->eTensor->sigmoid(), x->eTensor->dimensions());
+        if (x->needsGradient())
+            result->setGradFn(std::make_shared<Sigmoid<D, R>>(x->gradFn, result));
         return result;
     }
 
     void computeGradients() override {
-        if (a.has_value())
-            a.value()->addGrad(*r * (r->constant(1) - *r) * *CNode<D, R>::grad);
+        if (cx.has_value())
+            cx.value()->addGrad(*result * (result->constant(1) - *result) * *CNode<D, R>::grad);
         CNode<D, R>::finishComputeGradient();
     }
 
 private:
-    std::optional<std::shared_ptr<CNode<D, R>>> a;
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> r;
+    std::optional<std::shared_ptr<CNode<D, R>>> cx;
+    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> result;
 };
 
 

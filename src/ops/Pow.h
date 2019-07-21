@@ -1,6 +1,3 @@
-//
-// Created by polarbabe on 22.05.19.
-//
 
 #ifndef LIBDL_POW_H
 #define LIBDL_POW_H
@@ -11,26 +8,43 @@
 template <typename D, int R>
 class Pow : public CNode<D, R> {
 public:
-    Pow(const std::shared_ptr<Tensor<D, R>> &a, float p, const std::shared_ptr<Tensor<D, R>> &t)
-    : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a->gradFn}), t), a(a->eTensor), ca(a->gradFn), p(p) {}
+    Pow(
+            const std::shared_ptr<Tensor<D, R>> &x,
+            D p,
+            const std::shared_ptr<Tensor<D, R>> &result)
+            : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn}), result),
+            x(x->eTensor),
+            cx(x->gradFn),
+            p(p) {}
 
-    static std::shared_ptr<Tensor<D, R>> pow(const std::shared_ptr<Tensor<D, R>> &a, float p) {
-        auto result = std::make_shared<Tensor<D, R>>(a->eTensor->pow(p), a->eTensor->dimensions());
-        if (a->needsGradient())
-            result->setGradFn(std::make_shared<Pow<D, R>>(a, p, result));
+    /*
+     * \brief computes x to the power of p elementwise
+     *
+     * \param x the tensor for which the power should be computed
+     * \param p the power to which the tensor should be raised
+     *
+     * \return a new tensor with the same shape as x in which all elements have been raised to the power of p
+     * */
+    static std::shared_ptr<Tensor<D, R>> pow(
+            const std::shared_ptr<Tensor<D, R>> &x,
+            D p) {
+
+        auto result = std::make_shared<Tensor<D, R>>(x->eTensor->pow(p), x->eTensor->dimensions());
+        if (x->needsGradient())
+            result->setGradFn(std::make_shared<Pow<D, R>>(x, p, result));
         return result;
     }
 
     void computeGradients() override {
-        if (ca.has_value())
-            ca.value()->addGrad(a->constant(p) * a->pow(p - 1) * *CNode<D, R>::grad);
+        if (cx.has_value())
+            cx.value()->addGrad(x->constant(p) * x->pow(p - 1) * *CNode<D, R>::grad);
         CNode<D, R>::finishComputeGradient();
     }
 
 private:
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> a;
-    std::optional<std::shared_ptr<CNode<D, R>>> ca;
-    float p;
+    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> x;
+    std::optional<std::shared_ptr<CNode<D, R>>> cx;
+    D p;
 };
 
 

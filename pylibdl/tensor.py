@@ -50,4 +50,4 @@ def _check_input(dimensions, dtype):
 
     supported_dims = 4
     if dimensions > supported_dims:
-        raise RuntimeError(f'Only tensors up to {supported_dims} are supported. Got {len(data.shape)} dimensions.')
+        raise RuntimeError(f'Only tensors up to {supported_dims} dimensions are supported. Got {dimensions} dimensions.')

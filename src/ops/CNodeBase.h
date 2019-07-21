@@ -1,8 +1,3 @@
-#include <utility>
-
-//
-// Created by polarbabe on 21.05.19.
-//
 
 #ifndef LIBDL_CNODEBASE_H
 #define LIBDL_CNODEBASE_H

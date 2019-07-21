@@ -1,6 +1,3 @@
-//
-// Created by superbabes on 20.06.19.
-//
 
 #ifndef LIBDL_BATCHNORM2D_H
 #define LIBDL_BATCHNORM2D_H
@@ -58,7 +55,7 @@ public:
     /*
      * \brief performs batchnorm on the image like input
      *
-     * \param x the input on which batchnorm should be performed. needs to have 4 dimensions with shape (channels, width, height, batchsize)
+     * \param x a 4d tensor on which batchnorm should be performed with shape (channels, width, height, batchsize)
      * \param gamma the gamma parameter of batchnorm with shape (channels,)
      * \param beta the beta parameter of batchnorm with shape (channels,)
      * \param runningMean running mean of x with shape (channels,)
@@ -93,10 +90,8 @@ public:
         if (epsilon < 0)
             throw std::invalid_argument("epsilon must not be negative");
 
-        //  #efficient
         const Eigen::array<long, R> reshape{x->eTensor->dimension(0), 1, 1, 1};
-        const Eigen::array<long, R> broadcast{1, x->eTensor->dimension(1), x->eTensor->dimension(2),
-                                              x->eTensor->dimension(3)};
+        const Eigen::array<long, R> broadcast{1, x->eTensor->dimension(1), x->eTensor->dimension(2), x->eTensor->dimension(3)};
         const Eigen::array<int, 3> meanDims{1, 2, 3};
 
         static Eigen::ThreadPool pool(8);
@@ -108,10 +103,8 @@ public:
         if (useRunningAvgVar) {
             Eigen::Tensor<D, R> xh(x->eTensor->dimensions());
             xh.device(myDevice) = (*x->eTensor - runningMean->eTensor->reshape(reshape).broadcast(broadcast)) /
-                                  ((*runningVar->eTensor + runningVar->eTensor->constant(epsilon))
-                                          .sqrt().eval().reshape(reshape).broadcast(broadcast));
-            auto y = gamma->eTensor->reshape(reshape).broadcast(broadcast) * xh +
-                     beta->eTensor->reshape(reshape).broadcast(broadcast);
+                                  ((*runningVar->eTensor + runningVar->eTensor->constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
+            auto y = gamma->eTensor->reshape(reshape).broadcast(broadcast) * xh + beta->eTensor->reshape(reshape).broadcast(broadcast);
 
             result = std::make_shared<Tensor<D, R>>(y, x->eTensor->dimensions());
 
@@ -125,18 +118,13 @@ public:
             var.device(myDevice) = xm.square().mean(meanDims);
 
             Eigen::Tensor<D, R> xh(x->eTensor->dimensions());
-            xh.device(myDevice) =
-                    xm / ((var + var.constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
-            auto y = gamma->eTensor->reshape(reshape).broadcast(broadcast) * xh +
-                     beta->eTensor->reshape(reshape).broadcast(broadcast);
+            xh.device(myDevice) = xm / ((var + var.constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
+            auto y = gamma->eTensor->reshape(reshape).broadcast(broadcast) * xh + beta->eTensor->reshape(reshape).broadcast(broadcast);
 
             result = std::make_shared<Tensor<D, R>>(y, x->eTensor->dimensions());
 
-            runningMean->eTensor->device(myDevice) = mean.constant(momentum) * mean +
-                                                     runningMean->eTensor->constant(1 - momentum) *
-                                                     *runningMean->eTensor;
-            runningVar->eTensor->device(myDevice) =
-                    var.constant(momentum) * var + runningVar->eTensor->constant(1 - momentum) * *runningVar->eTensor;
+            runningMean->eTensor->device(myDevice) = mean.constant(momentum) * mean + runningMean->eTensor->constant(1 - momentum) * *runningMean->eTensor;
+            runningVar->eTensor->device(myDevice) = var.constant(momentum) * var + runningVar->eTensor->constant(1 - momentum) * *runningVar->eTensor;
 
             if (x->needsGradient() || gamma->needsGradient() || beta->needsGradient())
                 result->setGradFn(std::make_shared<BatchNorm2D<D>>(x, gamma, beta, std::move(mean), std::move(var), std::move(xh), epsilon, result));
@@ -152,8 +140,7 @@ public:
         const Eigen::array<int, 3> meanDims{1, 2, 3};
         if (cx.has_value()) {
             if (useRunningAvgVar) {
-                cx.value()->addGrad((*gamma / (*runningVar + runningVar->constant(epsilon)).sqrt()).eval().reshape(
-                        reshape).broadcast(broadcast) * *CNode<D, R>::grad);
+                cx.value()->addGrad((*gamma / (*runningVar + runningVar->constant(epsilon)).sqrt()).eval().reshape(reshape).broadcast(broadcast) * *CNode<D, R>::grad);
             } else {
                 auto rvpe = (var + var.constant(epsilon)).sqrt().eval();
                 auto xmm = (*x - mean.reshape(reshape).broadcast(broadcast)).eval();
@@ -162,9 +149,7 @@ public:
                 auto dxh = (gamma->reshape(reshape).broadcast(broadcast) * *CNode<D, R>::grad).eval();
                 auto dv = ((dxh * xmm).sum(meanDims) * var.constant(-.5) / rvpe.cube()).eval();
                 // auto dm = -dxh.sum(meanDims) / rvpe + dv * xmm.mean(meanDims) * dv.constant(-2);
-                auto dx = -dxh / rvpe.reshape(reshape).broadcast(broadcast)
-                          + dv.reshape(reshape).broadcast(broadcast) *
-                            (xmm * xmm.constant(2. / m) + xmm.constant(1. / m));
+                auto dx = -dxh / rvpe.reshape(reshape).broadcast(broadcast) + dv.reshape(reshape).broadcast(broadcast) * (xmm * xmm.constant(2. / m) + xmm.constant(1. / m));
                 cx.value()->addGrad(dx);
             }
         }

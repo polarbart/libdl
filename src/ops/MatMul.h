@@ -1,6 +1,3 @@
-//
-// Created by polarbabe on 18.05.19.
-//
 
 #ifndef LIBDL_MATMUL_H
 #define LIBDL_MATMUL_H
@@ -14,12 +11,31 @@ template <typename D, int RA, int RB>
 class MatMul : public CNode<D, RA + RB - 2> {
 
 public:
-    MatMul(const std::shared_ptr<Tensor<D, RA>> &a,
-           const std::shared_ptr<Tensor<D, RB>> &b,
-           const std::shared_ptr<Tensor<D, RA + RB - 2>> &t)
-    : CNode<D, RA + RB - 2>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a->gradFn, b->gradFn}), t), a(a->eTensor), b(b->eTensor), ca(a->gradFn), cb(b->gradFn) {}
+    MatMul(
+            const std::shared_ptr<Tensor<D, RA>> &a,
+            const std::shared_ptr<Tensor<D, RB>> &b,
+            const std::shared_ptr<Tensor<D, RA + RB - 2>> &result)
+            : CNode<D, RA + RB - 2>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a->gradFn, b->gradFn}), result),
+            a(a->eTensor),
+            b(b->eTensor),
+            ca(a->gradFn),
+            cb(b->gradFn) {}
 
-    static std::shared_ptr<Tensor<D, RA + RB - 2>> matmul(const std::shared_ptr<Tensor<D, RA>> &a, const std::shared_ptr<Tensor<D, RB>> &b) {
+    /*
+     * \brief performs a contraction along the last dimension of a and the first dimension of b
+     *
+     * \param a a tensor of shape (d_1, ..., d_n, d) and any dimension
+     * \param b a tensor of shape (d, e_1, ..., e_m) and any dimension
+     *
+     * \returns a new tensor of shape (d_1, ..., d_n, e_1, ..., e_n)
+     * */
+    static std::shared_ptr<Tensor<D, RA + RB - 2>> matmul(
+            const std::shared_ptr<Tensor<D, RA>> &a,
+            const std::shared_ptr<Tensor<D, RB>> &b) {
+
+        if (a->eTensor->dimension(RA - 1) != b->eTensor->dimension(0))
+            throw std::invalid_argument("the last dimension of a and the first dimension of b must match");
+
         std::array<long, RA + RB - 2> shape {};
         std::copy_n(std::begin(a->eTensor->dimensions()), RA - 1, std::begin(shape));
         std::copy_n(std::begin(b->eTensor->dimensions()) + 1, RB - 1, std::begin(shape) + RA - 1);

@@ -1,6 +1,3 @@
-//
-// Created by polarbabes on 16.05.19.
-//
 
 #ifndef LIBDL_ADD_H
 #define LIBDL_ADD_H
@@ -33,14 +30,15 @@ public:
      *
      * \return a new tensor of the shape with more dimensions
      * */
-    static std::shared_ptr<Tensor<D, std::max(RA, RB)>> add(const std::shared_ptr<Tensor<D, RA>> &a,
-                                                            const std::shared_ptr<Tensor<D, RB>> &b) {
+    static std::shared_ptr<Tensor<D, std::max(RA, RB)>> add(
+            const std::shared_ptr<Tensor<D, RA>> &a,
+            const std::shared_ptr<Tensor<D, RB>> &b) {
+
         if constexpr (RB > RA)
             return Add<D, RB, RA>::add(b, a);
         else {
-
             for (int i = 0; i < RB; i++)
-                if (a->eTesnor->dimension(i) != b->eTensor->dimension(i))
+                if (a->eTensor->dimension(i) != b->eTensor->dimension(i))
                     throw std::invalid_argument("shapes mismatch");
 
             std::shared_ptr<Tensor<D, RA>> result;

@@ -1,6 +1,3 @@
-//
-// Created by polarbabe on 21.05.19.
-//
 
 #include "CNodeBase.h"
 

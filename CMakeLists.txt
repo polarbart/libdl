@@ -26,27 +26,23 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Catch2" OR
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-
-
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Catch2)
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(OpenMP)
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/pybind11)
-add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog)
 
-set(TEST_TARGET libdl)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/libs/Catch2/contrib)
 
-pybind11_add_module(${TEST_TARGET} src/PythonBindings.cpp)
-#add_executable(${TEST_TARGET} main.cpp)# src/Tensor.cpp src/Add.cpp src/Sub.cpp src/MatMul.cpp src/CNode.cpp src/CNodeBase.cpp src/Utils.cpp src/Leaf.cpp src/Sigmoid.cpp src/Pow.cpp src/Sum.cpp)
+set(LIBDL_SRC libdl_src)
+set(LIBDL_PYTHON libdl_python)
+set(LIBDL_TESTS libdl_tests)
 
-target_link_libraries(${TEST_TARGET} PRIVATE Catch2::Catch2 Eigen3::Eigen pybind11::pybind11 spdlog::spdlog)
+add_subdirectory(src)
+#add_subdirectory(tests)
+add_subdirectory(python)
 
+#add_executable(xxx main.cpp)
+#target_link_libraries(xxx Eigen3::Eigen)
+#target_compile_features(xxx PUBLIC cxx_std_17)
 
-target_compile_features(${TEST_TARGET} PUBLIC cxx_std_17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -lpthread -O3 -march=native")
-
-# list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/libs/Catch2/contrib")
-# include(CTest)
-# include(Catch)
-# catch_discover_tests(${TEST_TARGET})
-
-

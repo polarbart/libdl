@@ -1,6 +1,3 @@
-//
-// Created by polarbabe on 22.05.19.
-//
 
 #ifndef LIBDL_LEAF_H
 #define LIBDL_LEAF_H

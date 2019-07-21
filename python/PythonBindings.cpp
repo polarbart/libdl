@@ -1,30 +1,27 @@
-//
-// Created by superbabes on 19.07.19.
-//
 
 #include <utility>
 #include <iostream>
 
-#include "Tensor.h"
-#include "ops/Add.h"
-#include "ops/MatMul.h"
-#include "ops/Leaf.h"
-#include "ops/Sub.h"
-#include "ops/Sigmoid.h"
-#include "ops/Pow.h"
-#include "ops/SumAlongAxis.h"
-#include "ops/MeanAlongAxis.h"
-#include "ops/Sum.h"
-#include "ops/Mean.h"
-#include "ops/LeakyRelu.h"
-#include "ops/Relu.h"
-#include "ops/Conv2D.h"
-#include "ops/MaxPool2D.h"
-#include "ops/Reshape.h"
-#include "ops/CrossEntropyWithLogits.h"
-#include "ops/BatchNorm2D.h"
-#include "functional/Adam.h"
-#include "ops/Linear.h"
+#include "../src/Tensor.h"
+#include "../src/ops/Add.h"
+#include "../src/ops/MatMul.h"
+#include "../src/ops/Leaf.h"
+#include "../src/ops/Sub.h"
+#include "../src/ops/Sigmoid.h"
+#include "../src/ops/Pow.h"
+#include "../src/ops/SumAlongAxes.h"
+#include "../src/ops/MeanAlongAxes.h"
+#include "../src/ops/Sum.h"
+#include "../src/ops/Mean.h"
+#include "../src/ops/LeakyRelu.h"
+#include "../src/ops/Relu.h"
+#include "../src/ops/Conv2D.h"
+#include "../src/ops/MaxPool2D.h"
+#include "../src/ops/Reshape.h"
+#include "../src/ops/CrossEntropyWithLogits.h"
+#include "../src/ops/BatchNorm2D.h"
+#include "../src/functional/Adam.h"
+#include "../src/ops/Linear.h"
 
 template <typename D, int R>
 std::shared_ptr<Tensor<D, R>> constant(std::array<long, R> shape, D value, bool requires_grad) {
@@ -54,8 +51,8 @@ void init_Module2(py::module &m, py::class_<Tensor<D, RA>, std::shared_ptr<Tenso
     if constexpr (RB > 0)
         m.def("reshape", &Reshape<D, RA, RB>::reshape);
     if constexpr (RA >= RB && RB > 0) {
-        //m.def("sum", &SumAlongAxis<D, RA, RB>::sum);
-        m.def("mean", &MeanAlongAxis<D, RA, RB>::mean);
+        m.def("sum", &SumAlongAxes<D, RA, RB>::sum);
+        m.def("mean", &MeanAlongAxes<D, RA, RB>::mean);
     }
 }
 

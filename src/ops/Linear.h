@@ -1,6 +1,3 @@
-//
-// Created by superbabes on 06.07.19.
-//
 
 #ifndef LIBDL_LINEAR_H
 #define LIBDL_LINEAR_H
@@ -17,35 +14,50 @@ template <typename D>
 class Linear : public CNode<D, R> {
 
 public:
-    Linear(const std::shared_ptr<Tensor<D, R>> &w,
-           const std::shared_ptr<Tensor<D, R>> &x,
-           const std::shared_ptr<Tensor<D, 1>> &b,
-           const std::shared_ptr<Tensor<D, R>> &result)
-           : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({w->gradFn, x->gradFn, b->gradFn}), result),
-           w(w->eTensor),
-           x(x->eTensor),
-           cw(w->gradFn),
-           cx(x->gradFn),
-           cb(b->gradFn) {}
+    Linear(
+            const std::shared_ptr<Tensor<D, R>> &w,
+            const std::shared_ptr<Tensor<D, R>> &x,
+            const std::shared_ptr<Tensor<D, 1>> &b,
+            const std::shared_ptr<Tensor<D, R>> &result)
+            : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({w->gradFn, x->gradFn, b->gradFn}), result),
+            w(w->eTensor),
+            x(x->eTensor),
+            cw(w->gradFn),
+            cx(x->gradFn),
+            cb(b->gradFn) {}
 
-    Linear(const std::shared_ptr<Tensor<D, R>> &w,
-           const std::shared_ptr<Tensor<D, R>> &x,
-           const std::shared_ptr<Tensor<D, R>> &result)
+    Linear(
+            const std::shared_ptr<Tensor<D, R>> &w,
+            const std::shared_ptr<Tensor<D, R>> &x,
+            const std::shared_ptr<Tensor<D, R>> &result)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({w->gradFn, x->gradFn}), result),
-              w(w->eTensor),
-              x(x->eTensor),
-              cw(w->gradFn),
-              cx(x->gradFn),
-              cb(std::nullopt) {}
+            w(w->eTensor),
+            x(x->eTensor),
+            cw(w->gradFn),
+            cx(x->gradFn),
+            cb(std::nullopt) {}
 
    /*
-    * w (f, f')
-    * x (f, n)
-    * b (f')
-    * result (f', n)
+    * \brief linear transformation w^T*x + b
+    *
+    * \param w a 2d weight tensor with shape (f, f')
+    * \param x the 2d tensor which should be transformed linearly of shape (f, batchsize)
+    * \param b a 1d bias tensor with shape (f',), may be null
+    *
+    * \return a new tensor of shape (f', batchsize)
     * */
-    static std::shared_ptr<Tensor<D, R>> linear(const std::shared_ptr<Tensor<D, R>> &w, const std::shared_ptr<Tensor<D, R>> &x, const std::shared_ptr<Tensor<D, 1>> &b) {
-        std::array<long, R> shape {w->eTensor->dimension(1), x->eTensor->dimension(1)};
+    static std::shared_ptr<Tensor<D, R>> linear(
+            const std::shared_ptr<Tensor<D, R>> &w,
+            const std::shared_ptr<Tensor<D, R>> &x,
+            const std::shared_ptr<Tensor<D, 1>> &b) {
+
+        if (w->eTensor->dimension(0) != x->eTensor->dimension(0))
+            throw std::invalid_argument("shapes of w and x mismatch");
+        if (b != nullptr && w->eTensor->dimension(1) != b->eTensor->dimension(0))
+            throw std::invalid_argument("shapes of w and b mismatch");
+
+
+       std::array<long, R> shape {w->eTensor->dimension(1), x->eTensor->dimension(1)};
 
         auto t = w->eTensor->contract(*x->eTensor, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(0, 0)});
         std::shared_ptr<Tensor<D, R>> result;

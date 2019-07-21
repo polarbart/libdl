@@ -1,8 +1,3 @@
-#include <utility>
-
-//
-// Created by superbabes on 16.06.19.
-//
 
 #ifndef LIBDL_MAXPOOL2D_H
 #define LIBDL_MAXPOOL2D_H
@@ -20,26 +15,44 @@ public:
     MaxPool2D(
             const std::shared_ptr<Tensor<D, R>> &x,
             Eigen::Tensor<int, R + 1> argmax,
-            const std::shared_ptr<Tensor<D, R>> &result,
-            int kernelSizeAndStride)
+            int kernelSizeAndStride,
+            const std::shared_ptr<Tensor<D, R>> &result)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn}), result),
             argmax(std::move(argmax)),
             cx(x->gradFn),
             kernelSizeAndStride(kernelSizeAndStride) {}
+
     /*
-     * x (c, h, w, n)
+     * \brief performs maxpooling on the image like tensor
+     *
+     * \param x a 4d tensor of shape (c, h, w, batchsize)
+     * \param kernelSizeAndStride the size of the kernel which is also the stride
+     *
+     * \return a new tensor of shape (c, h/kernelSizeAndStride, w/kernelSizeAndStride, batchsize)
      * */
-    static std::shared_ptr<Tensor<D, R>> maxpool2d(const std::shared_ptr<Tensor<D, R>> &x, int kernelSizeAndStride) {
-        std::array<long, R> newShape {x->eTensor->dimension(0), x->eTensor->dimension(1) / kernelSizeAndStride, x->eTensor->dimension(2) / kernelSizeAndStride, x->eTensor->dimension(3)};
+    static std::shared_ptr<Tensor<D, R>> maxpool2d(
+            const std::shared_ptr<Tensor<D, R>> &x,
+            int kernelSizeAndStride) {
+
+        if (kernelSizeAndStride <= 0)
+            throw std::invalid_argument("kernelSizeAndStride must be positive");
+
+        std::array<long, R> newShape {
+            x->eTensor->dimension(0),
+            x->eTensor->dimension(1) / kernelSizeAndStride,
+            x->eTensor->dimension(2) / kernelSizeAndStride,
+            x->eTensor->dimension(3)
+        };
         Eigen::Tensor<int, R + 1> argmax(2, newShape[0], newShape[1], newShape[2], newShape[3]);
+
         auto result = std::make_shared<Tensor<D, R>>(newShape);
 
         #pragma omp parallel for
         for (int a = 0; a < x->eTensor->dimension(3); a++) { // batchsize
-            for (int b = 0; b < x->eTensor->dimension(2) / kernelSizeAndStride * kernelSizeAndStride; b++) { // w
+            for (int b = 0; b < x->eTensor->dimension(2) - (x->eTensor->dimension(2) % kernelSizeAndStride); b++) { // w
                 int w = b / kernelSizeAndStride;
                 int wr = b % kernelSizeAndStride;
-                for (int c = 0; c < x->eTensor->dimension(1) / kernelSizeAndStride * kernelSizeAndStride; c++) { // h
+                for (int c = 0; c < x->eTensor->dimension(1) - (x->eTensor->dimension(1) % kernelSizeAndStride); c++) { // h
                     int h = c / kernelSizeAndStride;
                     int hr = c % kernelSizeAndStride;
 
@@ -61,7 +74,7 @@ public:
             }
         }
         if (x->needsGradient())
-            result->setGradFn(std::make_shared<MaxPool2D<D>>(x, std::move(argmax), result, kernelSizeAndStride));
+            result->setGradFn(std::make_shared<MaxPool2D<D>>(x, std::move(argmax), kernelSizeAndStride, result));
         return result;
     }
 

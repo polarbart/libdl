@@ -101,21 +101,21 @@ class MyResNet(Module):
     def __init__(self):
         super().__init__()
         self.initial = Sequential(
-            Conv2D(3, 64, 5, stride=2, bias=False),  # 64x64
-            BatchNorm2d(64),
+            Conv2D(3, 32, 5, stride=2, bias=False),  # 64x64
+            BatchNorm2d(32),
             MaxPool2d(2),  # 32x32
             LeakyReLU()
         )
 
         self.res1 = Sequential(
-            Conv2D(64, 64, 3, stride=1, bias=False),
+            Conv2D(32, 64, 3, stride=1, bias=False),
             BatchNorm2d(64),
             LeakyReLU(),
             Conv2D(64, 64, 3, stride=2, bias=False),  # 16x16
             BatchNorm2d(64)
         )
         self.adapt1 = Sequential(
-            Conv2D(64, 64, 1, stride=2, bias=False),
+            Conv2D(32, 64, 1, stride=2, bias=False),
             BatchNorm2d(64)
         )
 

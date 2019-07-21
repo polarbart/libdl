@@ -1,6 +1,3 @@
-//
-// Created by polarbabe on 26.05.19.
-//
 
 #ifndef LIBDL_ETENSOR_H
 #define LIBDL_ETENSOR_H
@@ -18,31 +15,37 @@ class ETensor : public Eigen::TensorMap<Eigen::Tensor<D, R>> {
 
 public:
 
-    explicit ETensor(const py::array_t<D, py::array::f_style> a) : Eigen::TensorMap<Eigen::Tensor<D, R>>(toTensorMap(a)), array(a) {}
+    explicit ETensor(const py::array_t<D, py::array::f_style> &a) : Eigen::TensorMap<Eigen::Tensor<D, R>>(toTensorMap(a)), array(a) {}
 
     explicit ETensor(const std::array<long, R> &shape)
-        : Eigen::TensorMap<Eigen::Tensor<D, R>>(new D[std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<>())], shape) {
+            : Eigen::TensorMap<Eigen::Tensor<D, R>>(new D[std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())], shape) {
+
         py::capsule c(Eigen::TensorMap<Eigen::Tensor<D, R>>::data(), [](void *f) {
             D *foo = reinterpret_cast<D*>(f);
             delete[] foo;
         });
-        array = py::array_t<D, py::array::f_style>(shape, Eigen::TensorMap<Eigen::Tensor<D, R>>::data(), c);
+        array = py::array_t<D, py::array::f_style>(
+                shape,
+                Eigen::TensorMap<Eigen::Tensor<D, R>>::data(),
+                c);
     }
 
     template <typename OtherDerived>
-    ETensor(const OtherDerived &t, const std::array<long, R> &d)
-        : Eigen::TensorMap<Eigen::Tensor<D, R>>(new D[std::accumulate(std::begin(d), std::end(d), 1, std::multiplies<>())], d) {
+    ETensor(const OtherDerived &t, const std::array<long, R> &shape)
+        : Eigen::TensorMap<Eigen::Tensor<D, R>>(new D[std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())], shape) {
 
         static Eigen::ThreadPool pool(8);
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
-
         Eigen::TensorMap<Eigen::Tensor<D, R>>::device(myDevice) = t;
+
         py::capsule c(Eigen::TensorMap<Eigen::Tensor<D, R>>::data(), [](void *f) {
             D *foo = reinterpret_cast<D*>(f);
             delete[] foo;
         });
-        array = py::array_t<D, py::array::f_style>(reinterpret_cast<std::array<long, R>>(Eigen::TensorMap<Eigen::Tensor<D, R>>::dimensions()),
-                Eigen::TensorMap<Eigen::Tensor<D, R>>::data(), c);
+        array = py::array_t<D, py::array::f_style>(
+                shape,
+                Eigen::TensorMap<Eigen::Tensor<D, R>>::data(),
+                c);
     }
 
     py::array_t<D, py::array::f_style> array;

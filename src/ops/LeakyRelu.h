@@ -1,6 +1,3 @@
-//
-// Created by polarbabe on 28.05.19.
-//
 
 #ifndef LIBDL_LEAKYRELU_H
 #define LIBDL_LEAKYRELU_H
@@ -13,17 +10,30 @@ template <typename D, int R>
 class LeakyRelu : public CNode<D, R> {
 
 public:
-    LeakyRelu(const std::shared_ptr<Tensor<D, R>> &x,
-              const std::shared_ptr<Tensor<D, R>> &result,
-              D negativeSlope)
-              : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn}), result),
-              x(x->eTensor),
-              cx(x->gradFn),
-              negativeSlope(negativeSlope){}
+    LeakyRelu(
+            const std::shared_ptr<Tensor<D, R>> &x,
+            const std::shared_ptr<Tensor<D, R>> &result,
+            D negativeSlope)
+            : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn}), result),
+            x(x->eTensor),
+            cx(x->gradFn),
+            negativeSlope(negativeSlope){}
 
-    static std::shared_ptr<Tensor<D, R>> leakyRelu(const std::shared_ptr<Tensor<D, R>> &x, D negativeSlope) {
+    /*
+     * \brief applies the leaky relu function elementwise
+     *
+     * \param x tensor of any shape
+     * \param negativeSlope factor by which negative values are scaled
+     *
+     * \return a new tensor with the same shape as x in which all negative values are scaled by negativeSlope
+     * */
+    static std::shared_ptr<Tensor<D, R>> leakyRelu(
+            const std::shared_ptr<Tensor<D, R>> &x,
+            D negativeSlope) {
+
         auto mask = (*x->eTensor >= x->eTensor->constant(0)).select(x->eTensor->constant(1), x->eTensor->constant(negativeSlope));
         auto result = std::make_shared<Tensor<D, R>>(*x->eTensor * mask, x->eTensor->dimensions());
+
         if (x->needsGradient())
             result->setGradFn(std::make_shared<LeakyRelu<D, R>>(x, result, negativeSlope));
         return result;

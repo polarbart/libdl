@@ -9,56 +9,83 @@ template <typename D, int RA, int RB>
 class Sub : public CNode<D, std::max(RA, RB)>  {
 
 public:
-    Sub(const std::optional<std::shared_ptr<CNode<D, RA>>> &a,
-        const std::optional<std::shared_ptr<CNode<D, RB>>> &b,
-        const std::shared_ptr<Tensor<D, std::max(RA, RB)>> &t)
-            : CNode<D, std::max(RA, RB)>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a, b}), t), a(a), b(b) {};
+    Sub(
+            const std::optional<std::shared_ptr<CNode<D, RA>>> &ca,
+            const std::optional<std::shared_ptr<CNode<D, RB>>> &cb,
+            const std::shared_ptr<Tensor<D, std::max(RA, RB)>> &t)
+            : CNode<D, std::max(RA, RB)>(Utils::removeOption<std::shared_ptr<CNodeBase>>({ca, cb}), t),
+            ca(ca),
+            cb(cb) {};
 
-    static std::shared_ptr<Tensor<D, std::max(RA, RB)>> sub(const std::shared_ptr<Tensor<D, RA>> &a, const std::shared_ptr<Tensor<D, RB>> &b) {
-        // TODO fix order dependence
-        if constexpr (RB > RA)
-            return Sub<D, RB, RA>::sub(b, a);
-        else {
-            std::shared_ptr<Tensor<D, RA>> result;
-            if constexpr (RB < RA) {
-                std::array<int, RA> reshape{};
-                std::array<int, RA> broadcast{};
-                for (int i = 0; i < RB; ++i) {
-                    reshape[i] = b->eTensor->dimension(i);
-                    broadcast[i] = 1;
-                }
-                for (int i = RB; i < RA; ++i) {
-                    reshape[i] = 1;
-                    broadcast[i] = a->eTensor->dimension(i);
-                }
-                result = std::make_shared<Tensor<D, RA>>(*a->eTensor - b->eTensor->reshape(reshape).broadcast(broadcast), a->eTensor->dimensions());
-            } else
-                result = std::make_shared<Tensor<D, RA>>(*a->eTensor - *b->eTensor, a->eTensor->dimensions());
+    /*
+     * \brief Elementwise substraction.
+     *        One tensor x can have a less dimensions than the other tensor y, as long as the first dimensions match.
+     *        x will be broadcasted to match y.
+     *        E.g. shapes (10, 5) and (10, 5, 8) are ok, but shapes (10, 5) and (8, 10, 5) are not
+     *
+     * \param a tensor of any dimension
+     * \param b tensor of any dimension
+     *
+     * \return a new tensor of the shape with more dimensions
+     * */
+    static std::shared_ptr<Tensor<D, std::max(RA, RB)>> sub(
+            std::shared_ptr<Tensor<D, RA>> a,
+            std::shared_ptr<Tensor<D, RB>> b) {
 
-            if (a->needsGradient() || b->needsGradient())
-                result->setGradFn(std::make_shared<Sub<D, RA, RB>>(a->gradFn, b->gradFn, result));
-            return result;
-        }
+        std::shared_ptr<Tensor<D, std::max(RA, RB)>> result;
+
+        if constexpr (RA == RB)
+            result = std::make_shared<Tensor<D, RA>>(*a->eTensor - *b->eTensor, a->eTensor->dimensions());
+        else if constexpr (RA < RB)
+            result = std::make_shared<Tensor<D, std::max(RA, RB)>>(broadcast(*a->eTensor, *b->eTensor) - *b->eTensor, b->eTensor->dimensions());
+        else if constexpr (RA > RB)
+            result = std::make_shared<Tensor<D, std::max(RA, RB)>>(*a->eTensor - broadcast(*b->eTensor, *a->eTensor), a->eTensor->dimensions());
+
+        if (a->needsGradient() || b->needsGradient())
+            result->setGradFn(std::make_shared<Sub<D, RA, RB>>(a->gradFn, b->gradFn, result));
+        return result;
     }
 
     void computeGradients() override {
-        if (a.has_value())
-            a.value()->addGrad(*CNode<D, RA>::grad);
-        if (b.has_value()) {
-            if constexpr (RB < RA) {
-                std::array<int, RA - RB> sum{};
-                for (int i = 0; i < RA - RB; ++i)
-                    sum[i] = RB + i;
-                b.value()->addGrad(-CNode<D, RA>::grad->sum(sum));
-            } else
-                b.value()->addGrad(-(*CNode<D, RA>::grad));
+        if (ca.has_value()) {
+            if constexpr (RA < RB)
+                ca.value()->addGrad(sum(*CNode<D, RB>::grad));
+            else
+                ca.value()->addGrad(*CNode<D, RA>::grad);
         }
-        CNode<D, RA>::finishComputeGradient();
+        if (cb.has_value()) {
+            if constexpr (RB < RA)
+                cb.value()->addGrad(-sum(*CNode<D, RA>::grad));
+            else
+                cb.value()->addGrad(-(*CNode<D, RB>::grad));
+        }
+        CNode<D, std::max(RA, RB)>::finishComputeGradient();
     }
 
 private:
-    std::optional<std::shared_ptr<CNode<D, RA>>> a;
-    std::optional<std::shared_ptr<CNode<D, RB>>> b;
+    std::optional<std::shared_ptr<CNode<D, RA>>> ca;
+    std::optional<std::shared_ptr<CNode<D, RB>>> cb;
+
+    static auto broadcast(const Eigen::TensorMap<Eigen::Tensor<D, std::min(RA, RB)>> &b, const Eigen::TensorMap<Eigen::Tensor<D, std::max(RA, RB)>> &a) {
+        std::array<int, std::max(RA, RB)> reshape{};
+        std::array<int, std::max(RA, RB)> broadcast{};
+        for (int i = 0; i < std::min(RA, RB); ++i) {
+            reshape[i] = b.dimension(i);
+            broadcast[i] = 1;
+        }
+        for (int i = std::min(RA, RB); i < std::max(RA, RB); ++i) {
+            reshape[i] = 1;
+            broadcast[i] = a.dimension(i);
+        }
+        return b.reshape(reshape).broadcast(broadcast);
+    }
+
+    static auto sum(const Eigen::TensorMap<Eigen::Tensor<D, std::max(RA, RB)>> &x) {
+        std::array<int, std::max(RA, RB) - std::min(RA, RB)> sum {};
+        for (int i = 0; i < std::max(RA, RB) - std::min(RA, RB); ++i)
+            sum[i] = std::max(RA, RB) + i;
+        return x.sum(sum);
+    }
 };
 
 #endif //LIBDL_SUB_H

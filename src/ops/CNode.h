@@ -1,6 +1,3 @@
-//
-// Created by polarbabe on 12.05.19.
-//
 
 #ifndef LIBDL_CNODE_H
 #define LIBDL_CNODE_H

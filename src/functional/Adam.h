@@ -1,6 +1,3 @@
-//
-// Created by superbabes on 21.06.19.
-//
 
 #ifndef LIBDL_ADAM_H
 #define LIBDL_ADAM_H
@@ -35,14 +32,19 @@ public:
         if (parameter->grad.use_count() == 0)
             return;
 
+        if (b1 < 0 || b2 < 0 || eps < 0)
+            throw std::invalid_argument("beta1, beta2 and epsilon must not be negative");
+
+        for (int i = 0; i < R; i++)
+            if (parameter->eTensor->dimension(i) != m->eTensor->dimension(i) || parameter->eTensor->dimension(i) != v->eTensor->dimension(i))
+                throw std::invalid_argument("the shapes of parameter, m and v must match");
+
         // #efficient
         static Eigen::ThreadPool pool(8);
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
 
-        m->eTensor->device(myDevice) =
-                m->eTensor->constant(b1) * *m->eTensor + m->eTensor->constant(1 - b1) * *parameter->grad;
-        v->eTensor->device(myDevice) =
-                v->eTensor->constant(b2) * *v->eTensor + v->eTensor->constant(1 - b2) * parameter->grad->square();
+        m->eTensor->device(myDevice) = m->eTensor->constant(b1) * *m->eTensor + m->eTensor->constant(1 - b1) * *parameter->grad;
+        v->eTensor->device(myDevice) = v->eTensor->constant(b2) * *v->eTensor + v->eTensor->constant(1 - b2) * parameter->grad->square();
 
         auto mh = *m->eTensor / m->eTensor->constant(1 - b1);
         auto vh = *v->eTensor / v->eTensor->constant(1 - b2);

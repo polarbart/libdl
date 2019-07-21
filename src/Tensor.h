@@ -1,6 +1,3 @@
-//
-// Created by polarbabe on 12.05.19.
-//
 
 #ifndef LIBDL_TENSOR_H
 #define LIBDL_TENSOR_H
@@ -29,8 +26,8 @@ public:
     bool requiresGrad;
 
     template<typename OtherDerived>
-    Tensor(const OtherDerived &t, const std::array<long, R> &d)
-            : eTensor(std::make_shared<ETensor<D, R>>(t, d)),
+    Tensor(const OtherDerived &t, const std::array<long, R> &shape)
+            : eTensor(std::make_shared<ETensor<D, R>>(t, shape)),
               gradFn(std::nullopt),
               requiresGrad(false) {}
 
@@ -39,7 +36,7 @@ public:
               gradFn(std::nullopt),
               requiresGrad(requiresGrad) {}
 
-    explicit Tensor(const std::array<long, R> shape, bool requiresGrad = false)
+    explicit Tensor(const std::array<long, R> &shape, bool requiresGrad = false)
             : eTensor(std::make_shared<ETensor<D, R>>(shape)),
               gradFn(std::nullopt), // TODO leaf node
               requiresGrad(requiresGrad) {}
@@ -62,7 +59,6 @@ public:
     void zeroGrad() {
         grad = std::shared_ptr<ETensor<D, R>>(nullptr);
     }
-
 
     void subGrad(D lr) {
         static Eigen::ThreadPool pool(8);

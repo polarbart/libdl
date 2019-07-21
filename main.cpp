@@ -1,19 +1,10 @@
 #include <iostream>
 #include <Eigen/Dense>
-#include <spdlog/spdlog.h>
 #define EIGEN_USE_THREADS
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <chrono>
 #include <unsupported/Eigen/CXX11/ThreadPool>
-/*
-#include "src/Tensor.h"
-#include "src/Sigmoid.h"
-#include "src/Add.h"
-#include "src/Pow.h"
-#include "src/Sub.h"
-#include "src/Sum.h"
-#include "src/MatMul.h"
-*/
+
 using namespace std;
 #define R 4
 #define D float
@@ -32,11 +23,23 @@ void dialate(Eigen::Tensor<float, 2> &d, Eigen::Tensor<float, 2> &m, int stride)
     }
 }
 
-int main() {
-    Eigen::Tensor<float, 2> a(2, 2);
-    Eigen::Tensor<float, 2> b = a;
-    std::cout << a << std::endl << b << std::endl;
+template <int A, int B>
+int test(int a, int b) {
+    if constexpr (A == B) {
+        auto c = 0;
+    }
+    if constexpr (A < B) {
+        auto c = a;
+    }
+    if constexpr (A > B) {
+        auto c = b;
+    }
+    return c;
+}
 
+int main() {
+
+    std::cout << test<1, 2>(1, 2) << std::endl;
 }
 
 /*
