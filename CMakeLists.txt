@@ -26,6 +26,9 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Catch2" OR
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
+#enable_testing()
+#add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Eigen)
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Catch2)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenMP)
@@ -38,11 +41,9 @@ set(LIBDL_PYTHON libdl_python)
 set(LIBDL_TESTS libdl_tests)
 
 add_subdirectory(src)
-#add_subdirectory(tests)
 add_subdirectory(python)
+#add_subdirectory(tests)
 
-#add_executable(xxx main.cpp)
-#target_link_libraries(xxx Eigen3::Eigen)
-#target_compile_features(xxx PUBLIC cxx_std_17)
+
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -lpthread -O3 -march=native")

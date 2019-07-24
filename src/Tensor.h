@@ -60,6 +60,7 @@ public:
         grad = std::shared_ptr<ETensor<D, R>>(nullptr);
     }
 
+    // subtract this tensors gradient from this tensor (used for gradient decent)
     void subGrad(D lr) {
         static Eigen::ThreadPool pool(8);
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
@@ -67,6 +68,7 @@ public:
             eTensor->device(myDevice) -= grad->constant(lr) * *grad;
     }
 
+    // add the given tensor onto this tensors gradient (used for backpropagation)
     void addGrad(const std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> &g) {
         static Eigen::ThreadPool pool(8);
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
@@ -76,6 +78,7 @@ public:
             grad->device(myDevice) += *g;
     }
 
+    // backpropagation algorithm
     void backward(D v = 1) {
         if (!gradFn.has_value()) {
             std::cout << "no grad is computed" << std::endl;
