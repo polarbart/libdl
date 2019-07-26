@@ -38,36 +38,36 @@ public:
             throw std::invalid_argument("kernelSizeAndStride must be positive");
 
         std::array<long, R> newShape {
-            x->eTensor->dimension(0),
-            x->eTensor->dimension(1) / kernelSizeAndStride,
-            x->eTensor->dimension(2) / kernelSizeAndStride,
-            x->eTensor->dimension(3)
+            x->data->dimension(0),
+            x->data->dimension(1) / kernelSizeAndStride,
+            x->data->dimension(2) / kernelSizeAndStride,
+            x->data->dimension(3)
         };
         Eigen::Tensor<int, R + 1> argmax(2, newShape[0], newShape[1], newShape[2], newShape[3]);
 
         auto result = std::make_shared<Tensor<D, R>>(newShape);
 
         #pragma omp parallel for
-        for (int a = 0; a < x->eTensor->dimension(3); a++) { // batchsize
-            for (int b = 0; b < x->eTensor->dimension(2) - (x->eTensor->dimension(2) % kernelSizeAndStride); b++) { // w
+        for (int a = 0; a < x->data->dimension(3); a++) { // batchsize
+            for (int b = 0; b < x->data->dimension(2) - (x->data->dimension(2) % kernelSizeAndStride); b++) { // w
                 int w = b / kernelSizeAndStride;
                 int wr = b % kernelSizeAndStride;
-                for (int c = 0; c < x->eTensor->dimension(1) - (x->eTensor->dimension(1) % kernelSizeAndStride); c++) { // h
+                for (int c = 0; c < x->data->dimension(1) - (x->data->dimension(1) % kernelSizeAndStride); c++) { // h
                     int h = c / kernelSizeAndStride;
                     int hr = c % kernelSizeAndStride;
 
                     if (wr == 0 && hr == 0)
-                        for (int d = 0; d < x->eTensor->dimension(0); d++) { // c
+                        for (int d = 0; d < x->data->dimension(0); d++) { // c
                             argmax(0, d, h, w, a) = 0;
                             argmax(1, d, h, w, a) = 0;
-                            (*result->eTensor)(d, h, w, a) = (*x->eTensor)(d, c, b, a);
+                            (*result->data)(d, h, w, a) = (*x->data)(d, c, b, a);
                         }
                     else
-                        for (int d = 0; d < x->eTensor->dimension(0); d++) { // c
-                            if ((*x->eTensor)(d, c, b, a) > (*result->eTensor)(d, h, w, a)) {
+                        for (int d = 0; d < x->data->dimension(0); d++) { // c
+                            if ((*x->data)(d, c, b, a) > (*result->data)(d, h, w, a)) {
                                 argmax(0, d, h, w, a) = hr;
                                 argmax(1, d, h, w, a) = wr;
-                                (*result->eTensor)(d, h, w, a) = (*x->eTensor)(d, c, b, a);
+                                (*result->data)(d, h, w, a) = (*x->data)(d, c, b, a);
                             }
                         }
                 }

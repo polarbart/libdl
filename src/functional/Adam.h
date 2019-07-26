@@ -36,19 +36,19 @@ public:
             throw std::invalid_argument("beta1, beta2 and epsilon must not be negative");
 
         for (int i = 0; i < R; i++)
-            if (parameter->eTensor->dimension(i) != m->eTensor->dimension(i) || parameter->eTensor->dimension(i) != v->eTensor->dimension(i))
+            if (parameter->data->dimension(i) != m->data->dimension(i) || parameter->data->dimension(i) != v->data->dimension(i))
                 throw std::invalid_argument("the shapes of parameter, m and v must match");
 
         // #efficient
         static Eigen::ThreadPool pool(8);
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
 
-        m->eTensor->device(myDevice) = m->eTensor->constant(b1) * *m->eTensor + m->eTensor->constant(1 - b1) * *parameter->grad;
-        v->eTensor->device(myDevice) = v->eTensor->constant(b2) * *v->eTensor + v->eTensor->constant(1 - b2) * parameter->grad->square();
+        m->data->device(myDevice) = m->data->constant(b1) * *m->data + m->data->constant(1 - b1) * *parameter->grad;
+        v->data->device(myDevice) = v->data->constant(b2) * *v->data + v->data->constant(1 - b2) * parameter->grad->square();
 
-        auto mh = *m->eTensor / m->eTensor->constant(1 - b1);
-        auto vh = *v->eTensor / v->eTensor->constant(1 - b2);
-        parameter->eTensor->device(myDevice) -= mh.constant(lr) * mh / (vh.sqrt() + vh.constant(eps));
+        auto mh = *m->data / m->data->constant(1 - b1);
+        auto vh = *v->data / v->data->constant(1 - b2);
+        parameter->data->device(myDevice) -= mh.constant(lr) * mh / (vh.sqrt() + vh.constant(eps));
     }
 
 };

@@ -35,11 +35,11 @@ public:
         std::shared_ptr<Tensor<D, std::max(RA, RB)>> result;
 
         if constexpr (RA == RB)
-            result = std::make_shared<Tensor<D, RA>>(*a->eTensor - *b->eTensor, a->eTensor->dimensions());
+            result = std::make_shared<Tensor<D, RA>>(*a->data - *b->data, a->data->dimensions());
         else if constexpr (RA < RB)
-            result = std::make_shared<Tensor<D, std::max(RA, RB)>>(broadcast(*a->eTensor, *b->eTensor) - *b->eTensor, b->eTensor->dimensions());
+            result = std::make_shared<Tensor<D, std::max(RA, RB)>>(broadcast(*a->data, *b->data) - *b->data, b->data->dimensions());
         else if constexpr (RA > RB)
-            result = std::make_shared<Tensor<D, std::max(RA, RB)>>(*a->eTensor - broadcast(*b->eTensor, *a->eTensor), a->eTensor->dimensions());
+            result = std::make_shared<Tensor<D, std::max(RA, RB)>>(*a->data - broadcast(*b->data, *a->data), a->data->dimensions());
 
         if (a->needsGradient() || b->needsGradient())
             result->setGradFn(std::make_shared<Sub<D, RA, RB>>(a->gradFn, b->gradFn, result));
@@ -80,10 +80,10 @@ private:
         return b.reshape(reshape).broadcast(broadcast);
     }
 
-    static auto sum(const Eigen::TensorMap<Eigen::Tensor<D, std::max(RA, RB)>> &x) {
+    static auto sum(const Eigen::Tensor<D, std::max(RA, RB)> &x) {
         std::array<int, std::max(RA, RB) - std::min(RA, RB)> sum {};
         for (int i = 0; i < std::max(RA, RB) - std::min(RA, RB); ++i)
-            sum[i] = std::max(RA, RB) + i;
+            sum[i] = std::min(RA, RB) + i;
         return x.sum(sum);
     }
 };

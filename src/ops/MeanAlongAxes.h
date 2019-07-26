@@ -5,7 +5,6 @@
 
 #include "../Tensor.h"
 #include "../Utils.h"
-#include <pybind11/stl.h>
 
 template <typename D, int RA, int RB>
 class MeanAlongAxes : public CNode<D, RA - RB> {
@@ -39,11 +38,11 @@ public:
         std::array<long, RA - RB> newShape {};
         for (int i = 0, j = 0; i < (RA - RB); j++)
             if (notIn(j, axes))
-                newShape[i++] = x->eTensor->dimension(j);
+                newShape[i++] = x->data->dimension(j);
 
-        auto result = std::make_shared<Tensor<D, RA - RB>>(x->eTensor->mean(axes), newShape);
+        auto result = std::make_shared<Tensor<D, RA - RB>>(x->data->mean(axes), newShape);
         if (x->needsGradient())
-            result->setGradFn(std::make_shared<MeanAlongAxes<D, RA, RB>>(x->gradFn, result, axes, x->eTensor->dimensions()));
+            result->setGradFn(std::make_shared<MeanAlongAxes<D, RA, RB>>(x->gradFn, result, axes, x->data->dimensions()));
         return result;
     }
 

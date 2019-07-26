@@ -13,7 +13,7 @@ public:
             const std::shared_ptr<Tensor<D, R>> &result)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({cx}), result),
             cx(cx),
-            result(result->eTensor) {}
+            result(result->data) {}
 
     /*
      * \brief applies the sigmoid function elementwise
@@ -24,7 +24,7 @@ public:
      * */
     static std::shared_ptr<Tensor<D, R>> sigmoid(
             const std::shared_ptr<Tensor<D, R>> &x) {
-        auto result = std::make_shared<Tensor<D, R>>(x->eTensor->sigmoid(), x->eTensor->dimensions());
+        auto result = std::make_shared<Tensor<D, R>>(x->data->sigmoid(), x->data->dimensions());
         if (x->needsGradient())
             result->setGradFn(std::make_shared<Sigmoid<D, R>>(x->gradFn, result));
         return result;
@@ -38,7 +38,7 @@ public:
 
 private:
     std::optional<std::shared_ptr<CNode<D, R>>> cx;
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> result;
+    std::shared_ptr<Eigen::Tensor<D, R>> result;
 };
 
 

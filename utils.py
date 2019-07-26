@@ -18,8 +18,8 @@ def validate(model, val_data):
     model.eval()
     accs = []
     for imgs, labels in val_loader:
-        pred = model(imgs).numpy()
-        accs.append((pred.argmax(0) == labels.numpy().argmax(0)).mean())
+        pred = model(imgs)
+        accs.append((np.argmax(pred.data, axis=0) == np.argmax(labels.data, axis=0)).mean())
     model.train(is_train)
     return np.mean(accs)
 

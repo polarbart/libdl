@@ -1,6 +1,6 @@
 import numpy as np
-from pylibdl import _tensor_types, tensor
-import libdl
+import pylibdl as libdl
+from pylibdl import _tensor_types, tensor, uniform, constant, zeros, ones
 import pickle
 
 
@@ -56,8 +56,8 @@ class Linear(Module):
 
     def __init__(self, in_features, out_features, bias=True):
         super().__init__()
-        self.w = tensor(np.random.normal(0, 1 / np.sqrt(in_features), size=(in_features, out_features)), requires_grad=True)
-        self.b = tensor(np.zeros(out_features), requires_grad=True) if bias else None
+        self.w = uniform([in_features, out_features], 1 / np.sqrt(in_features), True)
+        self.b = zeros([out_features], True) if bias else None
 
     def forward(self, x):
         return libdl.linear(self.w, x, self.b)
@@ -71,8 +71,8 @@ class Conv2D(Module):
             padding = filter_size // 2
         self.padding = padding
         self.stride = stride
-        self.filter = tensor(np.random.normal(0, 1 / np.sqrt(in_channels * filter_size * filter_size), size=(in_channels, filter_size, filter_size, out_channels)), requires_grad=True)
-        self.bias = tensor(np.zeros(out_channels), requires_grad=True) if bias else None
+        self.filter = uniform([in_channels, filter_size, filter_size, out_channels], 1 / np.sqrt(in_channels * filter_size * filter_size), True)
+        self.bias = zeros(out_channels, True) if bias else None
 
     def forward(self, x):
         return libdl.conv_2d(x, self.filter, self.bias, self.padding, self.stride)
@@ -84,10 +84,10 @@ class BatchNorm2d(Module):
         super().__init__()
         self.momentum = momentum
         self.eps = eps
-        self.gamma = tensor(np.ones(num_features), requires_grad=True)
-        self.beta = tensor(np.zeros(num_features), requires_grad=True)
-        self.running_mean = tensor(np.zeros(num_features), requires_grad=False)
-        self.running_var = tensor(np.ones(num_features), requires_grad=False)
+        self.gamma = ones([num_features], True)
+        self.beta = zeros([num_features], True)
+        self.running_mean = zeros([num_features], False)
+        self.running_var = ones([num_features], False)
 
     def forward(self, x):
         return libdl.batch_norm_2d(x, self.gamma, self.beta, self.running_mean, self.running_var, self.momentum, self.eps, not self.is_train)

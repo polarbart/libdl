@@ -15,7 +15,7 @@ public:
             const std::shared_ptr<Tensor<D, R>> &result,
             D negativeSlope)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn}), result),
-            x(x->eTensor),
+            x(x->data),
             cx(x->gradFn),
             negativeSlope(negativeSlope){}
 
@@ -31,8 +31,8 @@ public:
             const std::shared_ptr<Tensor<D, R>> &x,
             D negativeSlope) {
 
-        auto mask = (*x->eTensor >= x->eTensor->constant(0)).select(x->eTensor->constant(1), x->eTensor->constant(negativeSlope));
-        auto result = std::make_shared<Tensor<D, R>>(*x->eTensor * mask, x->eTensor->dimensions());
+        auto mask = (*x->data >= x->data->constant(0)).select(x->data->constant(1), x->data->constant(negativeSlope));
+        auto result = std::make_shared<Tensor<D, R>>(*x->data * mask, x->data->dimensions());
 
         if (x->needsGradient())
             result->setGradFn(std::make_shared<LeakyRelu<D, R>>(x, result, negativeSlope));
@@ -48,7 +48,7 @@ public:
     }
 
 private:
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> x;
+    std::shared_ptr<Eigen::Tensor<D, R>> x;
     std::optional<std::shared_ptr<CNode<D, R>>> cx;
     D negativeSlope;
 

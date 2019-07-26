@@ -22,7 +22,7 @@ public:
             cx(x->gradFn),
             cy(y->gradFn),
             softmax(std::move(softmax)),
-            y(y->eTensor) {}
+            y(y->data) {}
 
     /*
      * \brief apply softmax to x along the zero'th dimension
@@ -38,19 +38,19 @@ public:
             const std::shared_ptr<Tensor<D, R>> &y) {
 
         for (int i = 0; i < R; i++)
-            if (x->eTensor->dimension(i) != y->eTensor->dimension(i))
+            if (x->data->dimension(i) != y->data->dimension(i))
                 throw std::invalid_argument("the shapes of x and y must match");
 
         #pragma omp parallel for
-        for (int i = 0; i < y->eTensor->dimension(1); i++) {
+        for (int i = 0; i < y->data->dimension(1); i++) {
             bool hasOne = false;
-            for (int j = 0; j < y->eTensor->dimension(0); j++) {
-                if ((*y->eTensor)(j, i) == 1) {
+            for (int j = 0; j < y->data->dimension(0); j++) {
+                if ((*y->data)(j, i) == 1) {
                     if (hasOne)
                         throw std::invalid_argument("y is not one hot encoded");
                     else
                         hasOne = true;
-                } else if ((*y->eTensor)(j, i) != 0)
+                } else if ((*y->data)(j, i) != 0)
                     throw std::invalid_argument("y is not one hot encoded");
             }
             if (!hasOne)
@@ -60,17 +60,17 @@ public:
         static Eigen::ThreadPool pool(8);
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
 
-        Eigen::array<long, R> reshape = x->eTensor->dimensions();
+        Eigen::array<long, R> reshape = x->data->dimensions();
         reshape[0] = 1;
         Eigen::array<long, R> broadcast;
         broadcast.fill(1);
-        broadcast[0] = x->eTensor->dimension(0);
-        auto i1 = (*x->eTensor - x->eTensor->maximum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast)).exp();
+        broadcast[0] = x->data->dimension(0);
+        auto i1 = (*x->data - x->data->maximum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast)).exp();
 
-        Eigen::Tensor<D, R> softmax(x->eTensor->dimensions());
-        softmax.device(myDevice) = i1 / i1.sum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast) + i1.constant(1e-8);
-        auto mce = (-softmax.log() * *y->eTensor).mean();
-        auto result = std::make_shared<Tensor<D, 0>>(mce * mce.constant(x->eTensor->dimension(0)), std::array<long, 0> {});
+        Eigen::Tensor<D, R> softmax(x->data->dimensions());
+        softmax.device(myDevice) = i1 / i1.sum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast) + i1.constant(1e-64);
+        auto mce = (-softmax.log() * *y->data).mean();
+        auto result = std::make_shared<Tensor<D, 0>>(mce * mce.constant(x->data->dimension(0)), std::array<long, 0> {});
         if (x->needsGradient())
             result->setGradFn(std::make_shared<CrossEntropyWithLogits<D>>(x, y, std::move(softmax), result));
         return result;
@@ -90,7 +90,7 @@ private:
     std::optional<std::shared_ptr<CNode<D, R>>> cx;
     std::optional<std::shared_ptr<CNode<D, R>>> cy;
     Eigen::Tensor<D, R> softmax;
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> y;
+    std::shared_ptr<Eigen::Tensor<D, R>> y;
 
 };
 

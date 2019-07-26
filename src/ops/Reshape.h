@@ -5,7 +5,6 @@
 
 #include "CNode.h"
 #include "../Utils.h"
-#include <pybind11/stl.h>
 
 template <typename D, int RA, int RB>
 class Reshape : public CNode<D, RB> {
@@ -15,7 +14,7 @@ public:
             const std::shared_ptr<Tensor<D, RA>> &x,
             const std::shared_ptr<Tensor<D, RB>> &result)
             : CNode<D, RB>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn}), result),
-            oldShape(x->eTensor->dimensions()),
+            oldShape(x->data->dimensions()),
             cx(x->gradFn) {}
 
     /*
@@ -33,15 +32,15 @@ public:
 
         for (int i = 0; i < RB; i++)
             if (newShape[i] == -1) {
-                newShape[i] = x->eTensor->size() / std::accumulate(std::begin(newShape), std::end(newShape), -1, std::multiplies<>());
+                newShape[i] = x->data->size() / std::accumulate(std::begin(newShape), std::end(newShape), -1, std::multiplies<>());
                 break;
             }
 
         int newSize = std::accumulate(std::begin(newShape), std::end(newShape), 1, std::multiplies<>());
-        if (newSize != x->eTensor->size())
+        if (newSize != x->data->size())
             throw std::invalid_argument("x can't be reshaped to the given shape");
 
-        auto result = std::make_shared<Tensor<D, RB>>(x->eTensor->reshape(newShape), newShape);
+        auto result = std::make_shared<Tensor<D, RB>>(x->data->reshape(newShape), newShape);
         if (x->needsGradient())
             result->setGradFn(std::make_shared<Reshape<D, RA, RB>>(x, result));
         return result;

@@ -25,8 +25,8 @@ public:
             cx(x->gradFn),
             cgamma(gamma->gradFn),
             cbeta(beta->gradFn),
-            x(x->eTensor),
-            gamma(gamma->eTensor),
+            x(x->data),
+            gamma(gamma->data),
             mean(std::move(mean)),
             var(std::move(var)),
             epsilon(epsilon),
@@ -45,9 +45,9 @@ public:
             cx(x->gradFn),
             cgamma(gamma->gradFn),
             cbeta(beta->gradFn),
-            x(x->eTensor),
-            gamma(gamma->eTensor),
-            runningVar(runningVar->eTensor),
+            x(x->data),
+            gamma(gamma->data),
+            runningVar(runningVar->data),
             epsilon(epsilon),
             useRunningAvgVar(true),
             xh(std::move(xh)) {}
@@ -77,21 +77,21 @@ public:
             D epsilon,
             bool useRunningAvgVar) {
 
-        if (gamma->eTensor->dimension(0) != x->eTensor->dimension(0))
+        if (gamma->data->dimension(0) != x->data->dimension(0))
             throw std::invalid_argument("gamma has wrong shape");
-        if (beta->eTensor->dimension(0) != x->eTensor->dimension(0))
+        if (beta->data->dimension(0) != x->data->dimension(0))
             throw std::invalid_argument("beta has wrong shape");
-        if (runningMean->eTensor->dimension(0) != x->eTensor->dimension(0))
+        if (runningMean->data->dimension(0) != x->data->dimension(0))
             throw std::invalid_argument("runningMean has wrong shape");
-        if (runningVar->eTensor->dimension(0) != x->eTensor->dimension(0))
+        if (runningVar->data->dimension(0) != x->data->dimension(0))
             throw std::invalid_argument("runningVar has wrong shape");
         if (momentum < 0)
             throw std::invalid_argument("momentum must not be negative");
         if (epsilon < 0)
             throw std::invalid_argument("epsilon must not be negative");
 
-        const Eigen::array<long, R> reshape{x->eTensor->dimension(0), 1, 1, 1};
-        const Eigen::array<long, R> broadcast{1, x->eTensor->dimension(1), x->eTensor->dimension(2), x->eTensor->dimension(3)};
+        const Eigen::array<long, R> reshape{x->data->dimension(0), 1, 1, 1};
+        const Eigen::array<long, R> broadcast{1, x->data->dimension(1), x->data->dimension(2), x->data->dimension(3)};
         const Eigen::array<int, 3> meanDims{1, 2, 3};
 
         static Eigen::ThreadPool pool(8);
@@ -101,30 +101,30 @@ public:
 
         // https://wiki.tum.de/display/lfdv/Batch+Normalization
         if (useRunningAvgVar) {
-            Eigen::Tensor<D, R> xh(x->eTensor->dimensions());
-            xh.device(myDevice) = (*x->eTensor - runningMean->eTensor->reshape(reshape).broadcast(broadcast)) /
-                                  ((*runningVar->eTensor + runningVar->eTensor->constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
-            auto y = gamma->eTensor->reshape(reshape).broadcast(broadcast) * xh + beta->eTensor->reshape(reshape).broadcast(broadcast);
+            Eigen::Tensor<D, R> xh(x->data->dimensions());
+            xh.device(myDevice) = (*x->data - runningMean->data->reshape(reshape).broadcast(broadcast)) /
+                                  ((*runningVar->data + runningVar->data->constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
+            auto y = gamma->data->reshape(reshape).broadcast(broadcast) * xh + beta->data->reshape(reshape).broadcast(broadcast);
 
-            result = std::make_shared<Tensor<D, R>>(y, x->eTensor->dimensions());
+            result = std::make_shared<Tensor<D, R>>(y, x->data->dimensions());
 
             if (x->needsGradient() || gamma->needsGradient() || beta->needsGradient())
                 result->setGradFn(std::make_shared<BatchNorm2D<D>>(x, gamma, beta, runningVar, std::move(xh), epsilon, result));
 
         } else {
-            Eigen::Tensor<D, 1> mean(x->eTensor->dimension(0)), var(x->eTensor->dimension(0));
-            mean.device(myDevice) = x->eTensor->mean(meanDims);
-            auto xm = (*x->eTensor - mean.reshape(reshape).broadcast(broadcast)).eval();
+            Eigen::Tensor<D, 1> mean(x->data->dimension(0)), var(x->data->dimension(0));
+            mean.device(myDevice) = x->data->mean(meanDims);
+            auto xm = (*x->data - mean.reshape(reshape).broadcast(broadcast)).eval();
             var.device(myDevice) = xm.square().mean(meanDims);
 
-            Eigen::Tensor<D, R> xh(x->eTensor->dimensions());
+            Eigen::Tensor<D, R> xh(x->data->dimensions());
             xh.device(myDevice) = xm / ((var + var.constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
-            auto y = gamma->eTensor->reshape(reshape).broadcast(broadcast) * xh + beta->eTensor->reshape(reshape).broadcast(broadcast);
+            auto y = gamma->data->reshape(reshape).broadcast(broadcast) * xh + beta->data->reshape(reshape).broadcast(broadcast);
 
-            result = std::make_shared<Tensor<D, R>>(y, x->eTensor->dimensions());
+            result = std::make_shared<Tensor<D, R>>(y, x->data->dimensions());
 
-            runningMean->eTensor->device(myDevice) = mean.constant(momentum) * mean + runningMean->eTensor->constant(1 - momentum) * *runningMean->eTensor;
-            runningVar->eTensor->device(myDevice) = var.constant(momentum) * var + runningVar->eTensor->constant(1 - momentum) * *runningVar->eTensor;
+            runningMean->data->device(myDevice) = mean.constant(momentum) * mean + runningMean->data->constant(1 - momentum) * *runningMean->data;
+            runningVar->data->device(myDevice) = var.constant(momentum) * var + runningVar->data->constant(1 - momentum) * *runningVar->data;
 
             if (x->needsGradient() || gamma->needsGradient() || beta->needsGradient())
                 result->setGradFn(std::make_shared<BatchNorm2D<D>>(x, gamma, beta, std::move(mean), std::move(var), std::move(xh), epsilon, result));
@@ -168,11 +168,11 @@ private:
     bool useRunningAvgVar;
     D epsilon;
 
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> x;
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, 1>>> gamma;
+    std::shared_ptr<Eigen::Tensor<D, R>> x;
+    std::shared_ptr<Eigen::Tensor<D, 1>> gamma;
     Eigen::Tensor<D, 1> mean;
     Eigen::Tensor<D, 1> var;
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, 1>>> runningVar;
+    std::shared_ptr<Eigen::Tensor<D, 1>> runningVar;
     Eigen::Tensor<D, R> xh;
 
 

@@ -20,8 +20,8 @@ public:
             const std::shared_ptr<Tensor<D, 1>> &b,
             const std::shared_ptr<Tensor<D, R>> &result)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({w->gradFn, x->gradFn, b->gradFn}), result),
-            w(w->eTensor),
-            x(x->eTensor),
+            w(w->data),
+            x(x->data),
             cw(w->gradFn),
             cx(x->gradFn),
             cb(b->gradFn) {}
@@ -31,8 +31,8 @@ public:
             const std::shared_ptr<Tensor<D, R>> &x,
             const std::shared_ptr<Tensor<D, R>> &result)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({w->gradFn, x->gradFn}), result),
-            w(w->eTensor),
-            x(x->eTensor),
+            w(w->data),
+            x(x->data),
             cw(w->gradFn),
             cx(x->gradFn),
             cb(std::nullopt) {}
@@ -51,21 +51,21 @@ public:
             const std::shared_ptr<Tensor<D, R>> &x,
             const std::shared_ptr<Tensor<D, 1>> &b) {
 
-        if (w->eTensor->dimension(0) != x->eTensor->dimension(0))
+        if (w->data->dimension(0) != x->data->dimension(0))
             throw std::invalid_argument("shapes of w and x mismatch");
-        if (b != nullptr && w->eTensor->dimension(1) != b->eTensor->dimension(0))
+        if (b != nullptr && w->data->dimension(1) != b->data->dimension(0))
             throw std::invalid_argument("shapes of w and b mismatch");
 
 
-       std::array<long, R> shape {w->eTensor->dimension(1), x->eTensor->dimension(1)};
+       std::array<long, R> shape {w->data->dimension(1), x->data->dimension(1)};
 
-        auto t = w->eTensor->contract(*x->eTensor, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(0, 0)});
+        auto t = w->data->contract(*x->data, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(0, 0)});
         std::shared_ptr<Tensor<D, R>> result;
 
         if (b != nullptr) {
             Eigen::array<long, R> reshape {shape[0], 1};
             Eigen::array<long, R> broadcast {1, shape[1]};
-            result = std::make_shared<Tensor<D, R>>(t + b->eTensor->reshape(reshape).broadcast(broadcast), shape);
+            result = std::make_shared<Tensor<D, R>>(t + b->data->reshape(reshape).broadcast(broadcast), shape);
         } else
             result = std::make_shared<Tensor<D, R>>(t, shape);
 
@@ -89,8 +89,8 @@ public:
     }
 
 private:
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> w;
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> x;
+    std::shared_ptr<Eigen::Tensor<D, R>> w;
+    std::shared_ptr<Eigen::Tensor<D, R>> x;
     std::optional<std::shared_ptr<CNode<D, R>>> cw;
     std::optional<std::shared_ptr<CNode<D, R>>> cx;
     std::optional<std::shared_ptr<CNode<D, 1>>> cb;

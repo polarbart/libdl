@@ -20,8 +20,8 @@ public:
             int padding,
             int stride)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn, filter->gradFn, bias->gradFn}), result),
-            x(x->eTensor),
-            filter(filter->eTensor),
+            x(x->data),
+            filter(filter->data),
             cx(x->gradFn),
             cfilter(filter->gradFn),
             cbias(bias->gradFn),
@@ -35,8 +35,8 @@ public:
             int padding,
             int stride)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn, filter->gradFn}), result),
-            x(x->eTensor),
-            filter(filter->eTensor),
+            x(x->data),
+            filter(filter->data),
             cx(x->gradFn),
             cfilter(filter->gradFn),
             cbias(std::nullopt),
@@ -60,9 +60,9 @@ public:
             int padding,
             int stride) {
 
-        if (x->eTensor->dimension(0) != filter->eTensor->dimension(0) || (bias != nullptr && x->eTensor->dimension(0) != bias->eTensor->dimension(0)))
+        if (x->data->dimension(0) != filter->data->dimension(0) || (bias != nullptr && filter->data->dimension(3) != bias->data->dimension(0)))
             throw std::invalid_argument("the first dimensions of x, filter and bias must match");
-        if (bias != nullptr && filter->eTensor->dimension(3) != bias->eTensor->dimension(0))
+        if (bias != nullptr && filter->data->dimension(3) != bias->data->dimension(0))
             throw std::invalid_argument("the last dimension of filter and the first dimension of bias must match");
         if (padding < 0)
             throw std::invalid_argument("padding must not be negative");
@@ -70,22 +70,22 @@ public:
             throw std::invalid_argument("stride must be positive");
 
         std::array<long, R> newDims{
-                filter->eTensor->dimension(3),
-                (x->eTensor->dimension(1) - filter->eTensor->dimension(1) + 2 * padding) / stride + 1,
-                (x->eTensor->dimension(2) - filter->eTensor->dimension(2) + 2 * padding) / stride + 1,
-                x->eTensor->dimension(3),
+                filter->data->dimension(3),
+                (x->data->dimension(1) - filter->data->dimension(1) + 2 * padding) / stride + 1,
+                (x->data->dimension(2) - filter->data->dimension(2) + 2 * padding) / stride + 1,
+                x->data->dimension(3),
         };
 
         if (newDims[1] <= 0 || newDims[2] <= 0)
             throw std::invalid_argument("the size of the resulting convolution is <= 0");
 
-        auto r = myConvolution(*x->eTensor, *filter->eTensor, filter->eTensor->dimensions(), padding, stride);
+        auto r = myConvolution(*x->data, *filter->data, filter->data->dimensions(), padding, stride);
 
         std::shared_ptr<Tensor<D, R>> result;
         if (bias != nullptr) {
-            Eigen::array<long, R> reshape{bias->eTensor->dimension(0), 1, 1, 1};
+            Eigen::array<long, R> reshape{bias->data->dimension(0), 1, 1, 1};
             Eigen::array<long, R> broadcast{1, newDims[1], newDims[2], newDims[3]};
-            result = std::make_shared<Tensor<D, R>>(r + bias->eTensor->reshape(reshape).broadcast(broadcast), newDims);
+            result = std::make_shared<Tensor<D, R>>(r + bias->data->reshape(reshape).broadcast(broadcast), newDims);
         } else
             result = std::make_shared<Tensor<D, R>>(r, newDims);
 
@@ -115,11 +115,14 @@ public:
         }
         if (cfilter.has_value()) {
 
+            int dheight = x->dimension(1) - filter->dimension(1) + 2 * padding + 1;
+            int dwidth = x->dimension(2) - filter->dimension(2) + 2 * padding + 1;
+
             Eigen::array<long, R + 1> reshape{1, x->dimension(0), x->dimension(1), x->dimension(2), x->dimension(3)};
-            Eigen::array<long, R - 1> reshape2{x->dimension(1) * x->dimension(2), x->dimension(0) * filter->dimension(1) * filter->dimension(2), x->dimension(3)};
+            Eigen::array<long, R - 1> reshape2{dheight * dwidth, x->dimension(0) * filter->dimension(1) * filter->dimension(2), x->dimension(3)};
             Eigen::array<long, R + 1> reshape3{filter->dimension(0), filter->dimension(1), filter->dimension(2), x->dimension(3), filter->dimension(3)};
 
-            auto xvol = x->reshape(reshape).extract_volume_patches(1, x->dimension(1), x->dimension(2), 1, 1, 1, 1, 1, 1, 0, 0, padding, padding, padding, padding);
+            auto xvol = x->reshape(reshape).extract_volume_patches(1, dheight, dwidth, 1, 1, 1, 1, 1, 1, 0, 0, padding, padding, padding, padding, 0);
 
             auto im2col = xvol.reshape(reshape2);
 
@@ -128,8 +131,6 @@ public:
                 auto conv = im2col.contract(i2cFilter, Eigen::array<Eigen::IndexPair<int>, 1> {Eigen::IndexPair<int>(0, 1)});
                 cfilter.value()->addGrad(conv.reshape(reshape3).mean(Eigen::array<int, 1> {3}));
             } else {
-                int dheight = x->dimension(1) - filter->dimension(1) + 2 * padding + 1;
-                int dwidth = x->dimension(2) - filter->dimension(2) + 2 * padding + 1;
 
                 Eigen::Tensor<D, R - 1> dialated(CNode<D, R>::grad->dimension(0), dheight, dwidth);
                 Eigen::Tensor<D, R - 1> summedGrad(CNode<D, R>::grad->dimension(0), CNode<D, R>::grad->dimension(1), CNode<D, R>::grad->dimension(2));
@@ -149,8 +150,8 @@ public:
     }
 
 private:
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> x;
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> filter;
+    std::shared_ptr<Eigen::Tensor<D, R>> x;
+    std::shared_ptr<Eigen::Tensor<D, R>> filter;
     std::optional<std::shared_ptr<CNode<D, R>>> cx;
     std::optional<std::shared_ptr<CNode<D, R>>> cfilter;
     std::optional<std::shared_ptr<CNode<D, 1>>> cbias;

@@ -1,6 +1,9 @@
 
 #include <utility>
 #include <iostream>
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 
 #include "../src/Tensor.h"
 #include "../src/ops/Add.h"
@@ -23,19 +26,55 @@
 #include "../src/functional/Adam.h"
 #include "../src/ops/Linear.h"
 
+namespace py = pybind11;
+
 template <typename D, int R>
-std::shared_ptr<Tensor<D, R>> constant(std::array<long, R> shape, D value, bool requires_grad) {
-    auto ret = std::make_shared<Tensor<D, R>>(shape, requires_grad);
-    ret->eTensor->setConstant(value);
+std::shared_ptr<Tensor<D, R>> constant(std::array<long, R> shape, D value, bool requiresGrad) {
+    auto ret = std::make_shared<Tensor<D, R>>(shape, requiresGrad);
+    ret->data->setConstant(value);
+    if (requiresGrad)
+        ret->setGradFn(std::make_shared<Leaf<D, R>>(ret));
     return ret;
 }
 
 template <typename D, int R>
-std::shared_ptr<Tensor<D, R>> uniform(std::array<long, R> shape, D low, D high, bool requires_grad) {
-    auto ret = std::make_shared<Tensor<D, R>>(shape, requires_grad);
+std::shared_ptr<Tensor<D, R>> zeros(std::array<long, R> shape, bool requiresGrad) {
+    return constant<D, R>(shape, 0, requiresGrad);
+}
+
+template <typename D, int R>
+std::shared_ptr<Tensor<D, R>> ones(std::array<long, R> shape, bool requiresGrad) {
+    return constant<D, R>(shape, 1, requiresGrad);
+}
+
+template <typename D, int R>
+std::shared_ptr<Tensor<D, R>> uniform(std::array<long, R> shape, D low, D high, bool requiresGrad) {
+    auto ret = std::make_shared<Tensor<D, R>>(shape, requiresGrad);
     static Eigen::ThreadPool pool(8);
     static Eigen::ThreadPoolDevice myDevice(&pool, 8);
-    ret->eTensor->device(myDevice) = ret->eTensor->random() * (ret->eTensor->constant(high) - ret->eTensor->constant(low)) - ret->eTensor->constant(low);
+    ret->data->device(myDevice) = ret->data->random() * (ret->data->constant(high) - ret->data->constant(low)) - ret->data->constant(low);
+    if (requiresGrad)
+        ret->setGradFn(std::make_shared<Leaf<D, R>>(ret));
+    return ret;
+}
+
+template <typename D, int R>
+std::shared_ptr<Tensor<D, R>> centeredUniform(std::array<long, R> shape, D lowhigh, bool requiresGrad) {
+    return uniform<D, R>(shape, lowhigh, lowhigh, requiresGrad);
+}
+
+template <typename D, int R>
+std::shared_ptr<Tensor<D, R>> fromNumpy(py::array_t<D, py::array::f_style> &array, bool requiresGrad) {
+    auto info = array.request(true);
+    std::array<long, R> shape {};
+    std::copy_n(std::begin(info.shape), R, std::begin(shape));
+
+    Eigen::Tensor<D, R> data(shape);
+    std::copy_n(static_cast<D*>(info.ptr), data.size(), data.data());
+
+    auto ret = std::make_shared<Tensor<D, R>>(std::move(data), requiresGrad);
+    if (requiresGrad)
+        ret->setGradFn(std::make_shared<Leaf<D, R>>(ret));
     return ret;
 }
 
@@ -56,12 +95,36 @@ void init_Module2(py::module &m, py::class_<Tensor<D, RA>, std::shared_ptr<Tenso
     }
 }
 
+
+
 template<typename D, int R>
 void init_Module1(py::module &m) {
-    std::string name = "Tensor" + std::to_string(R);
-    auto tensor = py::class_<Tensor<D, R>, std::shared_ptr<Tensor<D, R>>>(m, name.c_str())
-            .def(py::init(&Tensor<D, R>::fromNumpy))
-            .def("numpy", [](const Tensor<D, R> &t) {return std::static_pointer_cast<ETensor<D, R>>(t.eTensor)->array;})
+
+    std::string eigenTensorName = "_EigenTensorx" + std::to_string(R);
+    py::class_<Eigen::Tensor<D, R>, std::shared_ptr<Eigen::Tensor<D, R>>>(m, eigenTensorName.c_str(), py::buffer_protocol())
+            .def_buffer([](Eigen::Tensor<D, R> &t) -> py::buffer_info {
+                std::array<ssize_t, R> strides {};
+                if constexpr (R > 0) {
+                    strides[0] = sizeof(D);
+                    for (int i = 1; i < R; i++)
+                        strides[i] = t.dimension(i - 1) * strides[i - 1];
+                }
+                return py::buffer_info(
+                        t.data(),
+                        sizeof(D),
+                        py::format_descriptor<D>::format(),
+                        R,
+                        t.dimensions(),
+                        strides
+                );
+            });
+
+
+    std::string myTensorName = "Tensor" + std::to_string(R);
+    auto tensor = py::class_<Tensor<D, R>, std::shared_ptr<Tensor<D, R>>>(m, myTensorName.c_str())
+            .def(py::init(&fromNumpy<D, R>))
+            .def_readonly("data", &Tensor<D, R>::data)
+            .def_readonly("grad", &Tensor<D, R>::grad)
             .def_property("requires_grad", [](const std::shared_ptr<Tensor<D, R>> &t) {return t->requiresGrad;},
                           [](std::shared_ptr<Tensor<D, R>> t, bool requiresGrad) {
                               if (requiresGrad) {
@@ -73,23 +136,24 @@ void init_Module1(py::module &m) {
                               }
                           })
             .def("backward", &Tensor<D, R>::backward, py::arg("v") = 1)
-            .def("grad", [](const Tensor<D, R> &t) {return std::static_pointer_cast<ETensor<D, R>>(t.grad)->array;})
             .def("zero_grad", &Tensor<D, R>::zeroGrad)
             .def("sub_grad", &Tensor<D, R>::subGrad)
             .def("__pow__", &Pow<D, R>::pow)
-            .def_property_readonly("shape", [](const Tensor<D, R> &t){return static_cast<std::array<long, R>>(t.eTensor->dimensions());})
-            .def("__getstate__", [](const Tensor<D, R> &p) {
-                return py::make_tuple(std::static_pointer_cast<ETensor<D, R>>(p.eTensor)->array, p.requiresGrad);
-            })
-            .def("__setstate__", [](Tensor<D, R> &p, py::tuple t) {
-                new (&p) Tensor<D, R>(t[0].cast<py::array_t<D, py::array::f_style>>(), t[1].cast<bool>());
-            })
-            .def("set_grad_fn()", [](const std::shared_ptr<Tensor<D, R>> &t) {
-                if (t->requiresGrad)
-                    t->setGradFn(std::make_shared<Leaf<D, R>>(t));
-            });
+            .def_property_readonly("shape", [](const Tensor<D, R> &t){return static_cast<std::array<long, R>>(t.data->dimensions());})
+            .def(py::pickle(
+                    [](const Tensor<D, R> &t) {
+                        return py::make_tuple(py::array_t<D, py::array::f_style>(t.data->dimensions(), t.data->data()), t.requiresGrad);
+                    },
+                    [](py::tuple t) {
+                        auto array = t[0].cast<py::array_t<D, py::array::f_style>>();
+                        return fromNumpy<D, R>(array, t[1].cast<bool>());
+                    }
+                ));
     m.def("constant", &constant<D, R>);
     m.def("uniform", &uniform<D, R>);
+    m.def("uniform", &centeredUniform<D, R>);
+    m.def("zeros", &zeros<D, R>);
+    m.def("ones", &ones<D, R>);
     m.def("sigmoid", &Sigmoid<D, R>::sigmoid);
     m.def("leaky_relu", &LeakyRelu<D, R>::leakyRelu, py::arg("x"), py::arg("negativeSlope") = 0.01);
     m.def("relu", &Relu<D, R>::relu);
@@ -115,17 +179,11 @@ void init_Module1(py::module &m) {
     //init_Module2<D, R, 5>(m);
 }
 
-PYBIND11_MODULE(libdl, m) {
+PYBIND11_MODULE(libdl_python, m) {
     init_Module1<float, 0>(m);
     init_Module1<float, 1>(m);
     init_Module1<float, 2>(m);
     init_Module1<float, 3>(m);
     init_Module1<float, 4>(m);
     //init_Module1<float, 5>(m);
-
-    /*py::enum_<PaddingType>(m, "PaddingType")
-            .value("SAME", PaddingType::SAME)
-            .value("VALID", PaddingType::VALID)
-            .export_values();
-    */
 }

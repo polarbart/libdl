@@ -38,7 +38,7 @@ public:
             return Add<D, RB, RA>::add(b, a);
         else {
             for (int i = 0; i < RB; i++)
-                if (a->eTensor->dimension(i) != b->eTensor->dimension(i))
+                if (a->data->dimension(i) != b->data->dimension(i))
                     throw std::invalid_argument("shapes mismatch");
 
             std::shared_ptr<Tensor<D, RA>> result;
@@ -46,17 +46,17 @@ public:
                 std::array<int, RA> reshape{};
                 std::array<int, RA> broadcast{};
                 for (int i = 0; i < RB; ++i) {
-                    reshape[i] = b->eTensor->dimension(i);
+                    reshape[i] = b->data->dimension(i);
                     broadcast[i] = 1;
                 }
                 for (int i = RB; i < RA; ++i) {
                     reshape[i] = 1;
-                    broadcast[i] = a->eTensor->dimension(i);
+                    broadcast[i] = a->data->dimension(i);
                 }
                 result = std::make_shared<Tensor<D, RA>>(
-                        *a->eTensor + b->eTensor->reshape(reshape).broadcast(broadcast), a->eTensor->dimensions());
+                        *a->data + b->data->reshape(reshape).broadcast(broadcast), a->data->dimensions());
             } else
-                result = std::make_shared<Tensor<D, RA>>(*a->eTensor + *b->eTensor, a->eTensor->dimensions());
+                result = std::make_shared<Tensor<D, RA>>(*a->data + *b->data, a->data->dimensions());
 
             if (a->needsGradient() || b->needsGradient())
                 result->setGradFn(std::make_shared<Add<D, RA, RB>>(a->gradFn, b->gradFn, result));

@@ -8,7 +8,7 @@
  - This should install the library into the user directory 
  - Run `pip uninstall libdl` to remove the library
 ## XOR Problem
-See [XOR.ipynb](XOR.ipynb) or [XOR.py](XOR.py)
+See [XOR.ipynb](XOR.ipynb)
 
 ## MNIST
 See [MNIST.ipynb](MNIST.ipynb)

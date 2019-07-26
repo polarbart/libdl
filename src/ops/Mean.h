@@ -5,9 +5,7 @@
 
 #include "../Tensor.h"
 #include "../Utils.h"
-#include <pybind11/pybind11.h>
 
-namespace py = pybind11;
 
 template <typename D, int R>
 class Mean : public CNode<D, 0> {
@@ -30,9 +28,9 @@ public:
     static std::shared_ptr<Tensor<D, 0>> mean(
             const std::shared_ptr<Tensor<D, R>> &x) {
 
-        auto result = std::make_shared<Tensor<D, 0>>(x->eTensor->mean(), std::array<long, 0> {});
+        auto result = std::make_shared<Tensor<D, 0>>(x->data->mean(), std::array<long, 0> {});
         if (x->needsGradient())
-            result->setGradFn(std::make_shared<Mean<D, R>>(x->gradFn, result, x->eTensor->dimensions()));
+            result->setGradFn(std::make_shared<Mean<D, R>>(x->gradFn, result, x->data->dimensions()));
         return result;
     }
 

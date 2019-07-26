@@ -7,7 +7,6 @@
 #include <vector>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include "CNodeBase.h"
-#include "../ETensor.h"
 
 template <typename D, int R>
 class Tensor;
@@ -17,7 +16,7 @@ class CNode : public CNodeBase {
 public:
 
     void emptyGrad() {
-        grad = std::make_shared<ETensor<D, R>>(shape);
+        grad = std::make_shared<Eigen::Tensor<D, R>>(shape);
         resetGrad = false;
     }
 
@@ -27,9 +26,8 @@ public:
         static Eigen::ThreadPoolDevice myDevice(&pool, 8);
         if (resetGrad) {
             if (grad.use_count() == 0)
-                grad = std::make_shared<ETensor<D, R>>(g, shape);
-            else
-                grad->device(myDevice) = g;
+                grad = std::make_shared<Eigen::Tensor<D, R>>(shape);
+            grad->device(myDevice) = g;
             resetGrad = false;
         } else
             grad->device(myDevice) += g;
@@ -39,11 +37,11 @@ public:
         resetGrad = true;
     }
 
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> grad;
+    std::shared_ptr<Eigen::Tensor<D, R>> grad;
     const std::array<long, R> shape;
 
 protected:
-    CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::shared_ptr<Tensor<D, R>> &holder) : CNodeBase(p), shape(holder->eTensor->dimensions()), holder(holder) {}
+    CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::shared_ptr<Tensor<D, R>> &holder) : CNodeBase(p), shape(holder->data->dimensions()), holder(holder) {}
 
     void finishComputeGradient() {
         if (holder.expired())

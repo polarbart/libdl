@@ -13,7 +13,7 @@ public:
             D p,
             const std::shared_ptr<Tensor<D, R>> &result)
             : CNode<D, R>(Utils::removeOption<std::shared_ptr<CNodeBase>>({x->gradFn}), result),
-            x(x->eTensor),
+            x(x->data),
             cx(x->gradFn),
             p(p) {}
 
@@ -29,7 +29,7 @@ public:
             const std::shared_ptr<Tensor<D, R>> &x,
             D p) {
 
-        auto result = std::make_shared<Tensor<D, R>>(x->eTensor->pow(p), x->eTensor->dimensions());
+        auto result = std::make_shared<Tensor<D, R>>(x->data->pow(p), x->data->dimensions());
         if (x->needsGradient())
             result->setGradFn(std::make_shared<Pow<D, R>>(x, p, result));
         return result;
@@ -42,7 +42,7 @@ public:
     }
 
 private:
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, R>>> x;
+    std::shared_ptr<Eigen::Tensor<D, R>> x;
     std::optional<std::shared_ptr<CNode<D, R>>> cx;
     D p;
 };

@@ -26,7 +26,7 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Catch2" OR
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-#enable_testing()
+enable_testing()
 #add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Eigen)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Catch2)
@@ -42,8 +42,6 @@ set(LIBDL_TESTS libdl_tests)
 
 add_subdirectory(src)
 add_subdirectory(python)
-#add_subdirectory(tests)
+add_subdirectory(tests)
 
-
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -lpthread -O3 -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -march=native -O3")

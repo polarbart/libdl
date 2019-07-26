@@ -16,8 +16,8 @@ public:
             const std::shared_ptr<Tensor<D, RB>> &b,
             const std::shared_ptr<Tensor<D, RA + RB - 2>> &result)
             : CNode<D, RA + RB - 2>(Utils::removeOption<std::shared_ptr<CNodeBase>>({a->gradFn, b->gradFn}), result),
-            a(a->eTensor),
-            b(b->eTensor),
+            a(a->data),
+            b(b->data),
             ca(a->gradFn),
             cb(b->gradFn) {}
 
@@ -33,14 +33,14 @@ public:
             const std::shared_ptr<Tensor<D, RA>> &a,
             const std::shared_ptr<Tensor<D, RB>> &b) {
 
-        if (a->eTensor->dimension(RA - 1) != b->eTensor->dimension(0))
+        if (a->data->dimension(RA - 1) != b->data->dimension(0))
             throw std::invalid_argument("the last dimension of a and the first dimension of b must match");
 
         std::array<long, RA + RB - 2> shape {};
-        std::copy_n(std::begin(a->eTensor->dimensions()), RA - 1, std::begin(shape));
-        std::copy_n(std::begin(b->eTensor->dimensions()) + 1, RB - 1, std::begin(shape) + RA - 1);
+        std::copy_n(std::begin(a->data->dimensions()), RA - 1, std::begin(shape));
+        std::copy_n(std::begin(b->data->dimensions()) + 1, RB - 1, std::begin(shape) + RA - 1);
 
-        auto t = a->eTensor->contract(*b->eTensor, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(RA-1, 0)});
+        auto t = a->data->contract(*b->data, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(RA-1, 0)});
         auto result = std::make_shared<Tensor<D, RA + RB - 2>>(t, shape);
 
         if (a->needsGradient() || b->needsGradient())
@@ -65,8 +65,8 @@ public:
     }
 
 private:
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, RA>>> a;
-    std::shared_ptr<Eigen::TensorMap<Eigen::Tensor<D, RB>>> b;
+    std::shared_ptr<Eigen::Tensor<D, RA>> a;
+    std::shared_ptr<Eigen::Tensor<D, RB>> b;
     std::optional<std::shared_ptr<CNode<D, RA>>> ca;
     std::optional<std::shared_ptr<CNode<D, RB>>> cb;
 };
