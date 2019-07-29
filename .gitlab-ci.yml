@@ -11,6 +11,7 @@ build-linux-gcc:
     - cd build
     - cmake ..
     - make
+    - make test
   tags:
     - linux
   cache:
@@ -25,6 +26,7 @@ build-linux-clang:
     - cd build
     - cmake .. -DCMAKE_CXX_COMPILER=/usr/bin/clang++
     - make
+    - make test
   tags:
     - linux
   cache:

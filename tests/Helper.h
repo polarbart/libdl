@@ -7,7 +7,7 @@
 
 using namespace Catch::literals;
 
-template<long N>
+template<int N>
 auto makeTensor(const long (&dimensions)[N], bool requiresGrad = true) {
     std::array<long, N> d;
     std::copy_n(std::begin(dimensions), N, std::begin(d));
@@ -17,7 +17,7 @@ auto makeTensor(const long (&dimensions)[N], bool requiresGrad = true) {
     return ret;
 }
 
-template<long N>
+template<int N>
 auto trange(const long (&dimensions)[N], bool requiresGrad = true, int mod = 1000) {
     auto ret = makeTensor(dimensions, requiresGrad);
     for (int i = 0; i < ret->data->size(); i++)
@@ -25,21 +25,21 @@ auto trange(const long (&dimensions)[N], bool requiresGrad = true, int mod = 100
     return ret;
 }
 
-template<long N>
+template<int N>
 auto constant(const long (&dimensions)[N], float value, bool requiresGrad = true) {
     auto ret = makeTensor(dimensions, requiresGrad);
     ret->data->setConstant(value);
     return ret;
 }
 
-template<long N>
+template<int N>
 auto random(const long (&dimensions)[N], bool requiresGrad = true) {
     auto ret = makeTensor(dimensions, requiresGrad);
     *ret->data = ret->data->random() * ret->data->constant(2) - ret->data->constant(1);
     return ret;
 }
 
-template<long N>
+template<int N>
 auto setGradAndBackward(const std::shared_ptr<Tensor<float, N>> &t, int mod = 1000) {
     Eigen::Tensor<float, N> grad(t->data->dimensions());
     for (int i = 0; i < grad.size(); i++)

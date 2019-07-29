@@ -19,3 +19,4 @@ Training and testing takes about 30 seconds.
 
 ## Final Project
 See [Final.ipynb](Final.ipynb)
+(sadly the gitlab ipynb viewer does not render everything correctly i.e. better view it on your local jupyter server)
