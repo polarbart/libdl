@@ -60,12 +60,8 @@ bool tensorEqual(const Eigen::Tensor<float, R> &a, const Eigen::Tensor<float, R>
             return false;
 
     for (int i = 0; i < a.size(); i++)
-        if (abs(a.data()[i] - b.data()[i]) > atol) {
-            std::cout << a << std::endl;
-            std::cout << b << std::endl;
-            std::cout << a.data()[i] << " " << b.data()[i] << " " << abs(a.data()[i] - b.data()[i]) << std::endl;
+        if (abs(a.data()[i] - b.data()[i]) > atol)
             return false;
-        }
 
     return true;
 }

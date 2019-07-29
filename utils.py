@@ -12,14 +12,15 @@ import random
 warnings.filterwarnings('ignore')
 
 
-def validate(model, val_data):
-    val_loader = DataLoader(val_data, 256, shuffle=False, drop_last=False)
+def validate(model, val_data, batch_size=128):
+    val_loader = DataLoader(val_data, batch_size, shuffle=False, drop_last=False)
     is_train = model.is_train
     model.eval()
     accs = []
-    for imgs, labels in val_loader:
-        pred = model(imgs)
-        accs.append((np.argmax(pred.data, axis=0) == np.argmax(labels.data, axis=0)).mean())
+    with libdl.no_grad():
+        for imgs, labels in val_loader:
+            pred = model(imgs)
+            accs.append((np.argmax(pred.data, axis=0) == np.argmax(labels.data, axis=0)).mean())
     model.train(is_train)
     return np.mean(accs)
 

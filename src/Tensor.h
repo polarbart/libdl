@@ -9,7 +9,7 @@
 #include <queue>
 #include "ops/CNode.h"
 #include "ops/Leaf.h"
-
+#include "GlobalThreadPool.h"
 
 template <typename D, int R>
 class Tensor {
@@ -25,9 +25,7 @@ public:
             : data(std::make_shared<Eigen::Tensor<D, R>>(shape)),
               gradFn(std::nullopt),
               requiresGrad(false) {
-                static Eigen::ThreadPool pool(8);
-                static Eigen::ThreadPoolDevice myDevice(&pool, 8);
-                data->device(myDevice) = t;
+                data->device(GlobalThreadPool::myDevice) = t;
               }
 
     Tensor(Eigen::Tensor<D, R> t, bool requiresGrad)
@@ -41,7 +39,8 @@ public:
               requiresGrad(requiresGrad) {}
 
     void setGradFn(const std::shared_ptr<CNode<D, R>>& g) {
-        gradFn = std::optional<std::shared_ptr<CNode<D, R>>>(g);
+        if (!CNodeBase::noGrad)
+            gradFn = std::optional<std::shared_ptr<CNode<D, R>>>(g);
     }
 
     bool needsGradient() {
@@ -54,32 +53,29 @@ public:
 
     // subtract this tensors gradient from this tensor (used for gradient decent)
     void subGrad(D lr) {
-        static Eigen::ThreadPool pool(8);
-        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
         if (grad.use_count() > 0)
-            data->device(myDevice) -= grad->constant(lr) * *grad;
+            data->device(GlobalThreadPool::myDevice) -= grad->constant(lr) * *grad;
     }
 
     // add the given tensor onto this tensors gradient (used for backpropagation)
     void addGrad(const std::shared_ptr<Eigen::Tensor<D, R>> &g) {
-        static Eigen::ThreadPool pool(8);
-        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
         if (grad.use_count() == 0) {
             grad = g;
         } else if (grad != g)
-            grad->device(myDevice) += *g;
+            grad->device(GlobalThreadPool::myDevice) += *g;
     }
 
     // backpropagation algorithm
     void backward(D v = 1) {
-        if (!gradFn.has_value()) {
-            std::cout << "no grad is computed" << std::endl;
+        // neither this tensor nor any of its predecessors needs a gradient
+        if (!gradFn.has_value())
             return;
-        }
+
         gradFn.value()->addGrad(data->constant(v));
 
         auto head = gradFn.value();
 
+        // first go through the graph
         std::queue<std::shared_ptr<CNodeBase>> q;
         q.push(head);
         while (!q.empty()) {

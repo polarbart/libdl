@@ -15,6 +15,7 @@ public:
     bool visited = false;
     virtual void computeGradients() = 0;
 
+    static bool noGrad;
 protected:
     explicit CNodeBase(std::vector<std::shared_ptr<CNodeBase>>);
 };

@@ -7,6 +7,7 @@
 #include <vector>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include "CNodeBase.h"
+#include "../GlobalThreadPool.h"
 
 template <typename D, int R>
 class Tensor;
@@ -22,15 +23,13 @@ public:
 
     template <typename Derived>
     void addGrad(const Derived &g) {
-        static Eigen::ThreadPool pool(8);
-        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
         if (resetGrad) {
             if (grad.use_count() == 0)
                 grad = std::make_shared<Eigen::Tensor<D, R>>(shape);
-            grad->device(myDevice) = g;
+            grad->device(GlobalThreadPool::myDevice) = g;
             resetGrad = false;
         } else
-            grad->device(myDevice) += g;
+            grad->device(GlobalThreadPool::myDevice) += g;
     }
 
     void zeroGrad() {

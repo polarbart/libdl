@@ -57,9 +57,6 @@ public:
                 throw std::invalid_argument("y is not one hot encoded");
         }
 
-        static Eigen::ThreadPool pool(8);
-        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
-
         Eigen::array<long, R> reshape = x->data->dimensions();
         reshape[0] = 1;
         Eigen::array<long, R> broadcast;
@@ -68,10 +65,10 @@ public:
         auto i1 = (*x->data - x->data->maximum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast)).exp();
 
         Eigen::Tensor<D, R> softmax(x->data->dimensions());
-        softmax.device(myDevice) = i1 / i1.sum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast) + i1.constant(1e-64);
+        softmax.device(GlobalThreadPool::myDevice) = i1 / i1.sum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast) + i1.constant(1e-64);
         auto mce = (-softmax.log() * *y->data).mean();
         auto result = std::make_shared<Tensor<D, 0>>(mce * mce.constant(x->data->dimension(0)), std::array<long, 0> {});
-        if (x->needsGradient())
+        if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<CrossEntropyWithLogits<D>>(x, y, std::move(softmax), result));
         return result;
     }

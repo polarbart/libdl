@@ -27,7 +27,7 @@ public:
     static std::shared_ptr<Tensor<D, 0>> sum(
             const std::shared_ptr<Tensor<D, R>> &x) {
         auto result = std::make_shared<Tensor<D, 0>>(x->data->sum(), std::array<long, 0> {});
-        if (x->needsGradient())
+        if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<Sum<D, R>>(x->gradFn, result, x->data->dimensions()));
         return result;
     }

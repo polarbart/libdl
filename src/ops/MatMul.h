@@ -43,7 +43,7 @@ public:
         auto t = a->data->contract(*b->data, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(RA-1, 0)});
         auto result = std::make_shared<Tensor<D, RA + RB - 2>>(t, shape);
 
-        if (a->needsGradient() || b->needsGradient())
+        if ((a->needsGradient() || b->needsGradient()) && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<MatMul<D, RA, RB>>(a, b, result));
         return result;
     }

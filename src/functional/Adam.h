@@ -37,18 +37,15 @@ public:
 
         for (int i = 0; i < R; i++)
             if (parameter->data->dimension(i) != m->data->dimension(i) || parameter->data->dimension(i) != v->data->dimension(i))
-                throw std::invalid_argument("the shapes of parameter, m and v must match");
+                throw std::invalid_argument("the shapes of parameter m and v must match");
 
         // #efficient
-        static Eigen::ThreadPool pool(8);
-        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
-
-        m->data->device(myDevice) = m->data->constant(b1) * *m->data + m->data->constant(1 - b1) * *parameter->grad;
-        v->data->device(myDevice) = v->data->constant(b2) * *v->data + v->data->constant(1 - b2) * parameter->grad->square();
+        m->data->device(GlobalThreadPool::myDevice) = m->data->constant(b1) * *m->data + m->data->constant(1 - b1) * *parameter->grad;
+        v->data->device(GlobalThreadPool::myDevice) = v->data->constant(b2) * *v->data + v->data->constant(1 - b2) * parameter->grad->square();
 
         auto mh = *m->data / m->data->constant(1 - b1);
         auto vh = *v->data / v->data->constant(1 - b2);
-        parameter->data->device(myDevice) -= mh.constant(lr) * mh / (vh.sqrt() + vh.constant(eps));
+        parameter->data->device(GlobalThreadPool::myDevice) -= mh.constant(lr) * mh / (vh.sqrt() + vh.constant(eps));
     }
 
 };

@@ -2,11 +2,14 @@ import multiprocessing as mp
 import threading
 import numpy as np
 import queue
-from pylibdl.tensor import tensor
+from pylibdl.tensor import tensor, Tensor
+from typing import Tuple
 
 
 class Dataset:
-
+    """
+    Abstract concept of a dataset
+    """
     def __getitem__(self, i):
         raise NotImplementedError
 
@@ -15,7 +18,9 @@ class Dataset:
 
 
 class DataLoader:
-
+    """
+    Wraps a Dataset and represents an iterator which iterates over minibatches.
+    """
     def __init__(self, dataset: Dataset, batch_size: int, shuffle: bool = True, num_workers: int = 0,
                  drop_last: bool = False):
         if num_workers == 0:
@@ -35,27 +40,32 @@ class DataLoader:
         return _DataLoaderIter(self.dataset, self.num_workers, self.batch_idxs)
 
 
-class DataLoaderWorker(threading.Thread):
-    def __init__(self, dataset: Dataset, idx, index_queue: queue.Queue):
+class _DataLoaderWorker(threading.Thread):
+    """
+    Loads one minibatch asynchronously
+    """
+    def __init__(self, dataset: Dataset, idx: np.ndarray, index_queue: queue.Queue):
         super().__init__()
         self.dataset = dataset
         self.idx = idx
         self.batch_queue = index_queue
 
-    def _prepare_batch(self, idx):
-        elements = [self.dataset[i] for i in idx]
+    def _prepare_batch(self) -> Tuple[Tensor]:
+        elements = [self.dataset[i] for i in self.idx]
         if type(elements[0]) is not tuple:
             for i in range(len(elements)):
                 elements[i] = elements[i],
         return tuple(tensor(np.stack(x, axis=-1)) for x in zip(*elements))
 
     def run(self):
-        batch = self._prepare_batch(self.idx)
+        batch = self._prepare_batch()
         self.batch_queue.put(batch)
 
 
 class _DataLoaderIter:
-
+    """
+    An iterator which iterates over minibatches. The minibatches are loaded asynchronously.
+    """
     def __init__(self, dataset: Dataset, num_workers: int, batch_idxs: list):
         self.dataset = dataset
         self.index_queue = queue.Queue()
@@ -72,10 +82,10 @@ class _DataLoaderIter:
     def _load_batch(self):
         if self.index_queue.empty():
             return
-        self.worker.append(DataLoaderWorker(self.dataset, self.index_queue.get(), self.batch_queue))
+        self.worker.append(_DataLoaderWorker(self.dataset, self.index_queue.get(), self.batch_queue))
         self.worker[-1].start()
 
-    def __next__(self):
+    def __next__(self) -> Tuple[Tensor]:
         if self.remaining_batches <= 0:
             raise StopIteration
         self.remaining_batches -= 1

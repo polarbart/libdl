@@ -1,7 +1,8 @@
 import numpy as np
 import pylibdl as libdl
-from pylibdl import _tensor_types, tensor, uniform, constant, zeros, ones
+from pylibdl import _tensor_types, normal, zeros, ones, Tensor
 import pickle
+from typing import Any, Optional
 
 
 class Module:
@@ -11,7 +12,7 @@ class Module:
         self.modules = []
         self.is_train = True
 
-    def train(self, is_train=True):
+    def train(self, is_train: bool = True):
         self.is_train = is_train
         for m in self.modules:
             m.train(is_train)
@@ -33,7 +34,7 @@ class Module:
         self._register(value)
         super().__setattr__(key, value)
 
-    def _register(self, v):
+    def _register(self, v: Any):
         if type(v) in _tensor_types:
             self.tensors.append(v)
         elif issubclass(type(v), Module):
@@ -42,45 +43,45 @@ class Module:
     def parameter(self):
         return [t for m in self.modules for t in m.parameter()] + self.tensors
 
-    def save(self, path):
+    def save(self, path: str):
         with open(path, 'wb') as f:
             pickle.dump(self, f)
 
     @staticmethod
-    def load(path):
+    def load(path: str):
         with open(path, 'rb') as f:
             return pickle.load(f)
 
 
 class Linear(Module):
 
-    def __init__(self, in_features, out_features, bias=True):
+    def __init__(self, in_features: int, out_features: int, bias: bool = True):
         super().__init__()
-        self.w = uniform([in_features, out_features], 1 / np.sqrt(in_features), True)
+        self.w = normal([in_features, out_features], 0, 1 / np.sqrt(in_features), True)
         self.b = zeros([out_features], True) if bias else None
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         return libdl.linear(self.w, x, self.b)
 
 
 class Conv2D(Module):
 
-    def __init__(self, in_channels, out_channels, filter_size, padding=None, stride=1, bias=True):
+    def __init__(self, in_channels: int, out_channels: int, filter_size: int, padding: Optional[int] = None, stride: int = 1, bias: bool = True):
         super().__init__()
         if padding is None:
             padding = filter_size // 2
         self.padding = padding
         self.stride = stride
-        self.filter = uniform([in_channels, filter_size, filter_size, out_channels], 1 / np.sqrt(in_channels * filter_size * filter_size), True)
+        self.filter = normal([in_channels, filter_size, filter_size, out_channels], 0, 1 / np.sqrt((in_channels * filter_size * filter_size)), True)
         self.bias = zeros(out_channels, True) if bias else None
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         return libdl.conv_2d(x, self.filter, self.bias, self.padding, self.stride)
 
 
 class BatchNorm2d(Module):
 
-    def __init__(self, num_features, momentum=.9, eps=1e-5):
+    def __init__(self, num_features: int, momentum: float = .9, eps: float = 1e-5):
         super().__init__()
         self.momentum = momentum
         self.eps = eps
@@ -89,44 +90,44 @@ class BatchNorm2d(Module):
         self.running_mean = zeros([num_features], False)
         self.running_var = ones([num_features], False)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         return libdl.batch_norm_2d(x, self.gamma, self.beta, self.running_mean, self.running_var, self.momentum, self.eps, not self.is_train)
 
 
 class ReLu(Module):
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         return libdl.relu(x)
 
 
 class LeakyReLU(Module):
 
-    def __init__(self, negative_slope=.01):
+    def __init__(self, negative_slope: float = .01):
         super().__init__()
         self.negative_slope = negative_slope
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         return libdl.leaky_relu(x, self.negative_slope)
 
 
 class MaxPool2d(Module):
 
-    def __init__(self, kernel_size_and_stride=2):
+    def __init__(self, kernel_size_and_stride: int = 2):
         super().__init__()
         self.kernel_size_and_stride = kernel_size_and_stride
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         return libdl.maxpool_2d(x, self.kernel_size_and_stride)
 
 
 class Sequential(Module):
-    def __init__(self, *seq):
+    def __init__(self, *seq: Tensor):
         super().__init__()
         self.seq = seq
         for m in self.seq:
             self._register(m)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         for m in self.seq:
             x = m(x)
         return x

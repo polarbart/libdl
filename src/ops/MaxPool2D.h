@@ -73,7 +73,7 @@ public:
                 }
             }
         }
-        if (x->needsGradient())
+        if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<MaxPool2D<D>>(x, std::move(argmax), kernelSizeAndStride, result));
         return result;
     }

@@ -30,7 +30,7 @@ public:
             D p) {
 
         auto result = std::make_shared<Tensor<D, R>>(x->data->pow(p), x->data->dimensions());
-        if (x->needsGradient())
+        if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<Pow<D, R>>(x, p, result));
         return result;
     }

@@ -34,7 +34,7 @@ public:
         auto mask = (*x->data >= x->data->constant(0)).select(x->data->constant(1), x->data->constant(negativeSlope));
         auto result = std::make_shared<Tensor<D, R>>(*x->data * mask, x->data->dimensions());
 
-        if (x->needsGradient())
+        if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<LeakyRelu<D, R>>(x, result, negativeSlope));
         return result;
     }

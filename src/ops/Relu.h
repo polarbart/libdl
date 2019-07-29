@@ -28,7 +28,7 @@ public:
             const std::shared_ptr<Tensor<D, R>> &x) {
         auto tmp = (*x->data >= x->data->constant(0)).select(*x->data, x->data->constant(0));
         auto result = std::make_shared<Tensor<D, R>>(tmp, x->data->dimensions());
-        if (x->needsGradient())
+        if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<Relu<D, R>>(x, result));
         return result;
     }

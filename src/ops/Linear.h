@@ -69,7 +69,7 @@ public:
         } else
             result = std::make_shared<Tensor<D, R>>(t, shape);
 
-        if (w->needsGradient() || x->needsGradient() || (b != nullptr && b->needsGradient())) {
+        if ((w->needsGradient() || x->needsGradient() || (b != nullptr && b->needsGradient())) && !CNodeBase::noGrad) {
             if (b != nullptr)
                 result->setGradFn(std::make_shared<Linear<D>>(w, x, b, result));
             else

@@ -89,7 +89,7 @@ public:
         } else
             result = std::make_shared<Tensor<D, R>>(r, newDims);
 
-        if (x->needsGradient() || filter->needsGradient() || (bias != nullptr && bias->needsGradient())) {
+        if ((x->needsGradient() || filter->needsGradient() || (bias != nullptr && bias->needsGradient())) && !CNodeBase::noGrad) {
             if (bias != nullptr)
                 result->setGradFn(std::make_shared<Conv2D<D>>(x, filter, bias, result, padding, stride));
             else
@@ -99,8 +99,6 @@ public:
     }
 
     void computeGradients() override {
-        static Eigen::ThreadPool pool(8);
-        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
 
         if (cx.has_value()) {
 
@@ -134,7 +132,7 @@ public:
 
                 Eigen::Tensor<D, R - 1> dialated(CNode<D, R>::grad->dimension(0), dheight, dwidth);
                 Eigen::Tensor<D, R - 1> summedGrad(CNode<D, R>::grad->dimension(0), CNode<D, R>::grad->dimension(1), CNode<D, R>::grad->dimension(2));
-                summedGrad.device(myDevice) = CNode<D, R>::grad->sum(Eigen::array<int, 1> {3});
+                summedGrad.device(GlobalThreadPool::myDevice) = CNode<D, R>::grad->sum(Eigen::array<int, 1> {3});
                 myDilationForFilter(dialated, summedGrad, stride);
 
                 auto i2cFilter = dialated.reshape(Eigen::array<long, 2>{CNode<D, R>::grad->dimension(0), reshape2[0]});
@@ -196,7 +194,7 @@ private:
         return conv.reshape(reshape2);
     }
 
-    /*
+    /*a
      * \brief dilates in and stores the result in out
      *
      * \param out

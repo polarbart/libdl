@@ -41,7 +41,7 @@ public:
                 newShape[i++] = x->data->dimension(j);
 
         auto result = std::make_shared<Tensor<D, RA - RB>>(x->data->mean(axes), newShape);
-        if (x->needsGradient())
+        if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<MeanAlongAxes<D, RA, RB>>(x->gradFn, result, axes, x->data->dimensions()));
         return result;
     }

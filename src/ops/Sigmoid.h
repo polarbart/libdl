@@ -25,7 +25,7 @@ public:
     static std::shared_ptr<Tensor<D, R>> sigmoid(
             const std::shared_ptr<Tensor<D, R>> &x) {
         auto result = std::make_shared<Tensor<D, R>>(x->data->sigmoid(), x->data->dimensions());
-        if (x->needsGradient())
+        if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<Sigmoid<D, R>>(x->gradFn, result));
         return result;
     }

@@ -1,12 +1,13 @@
-import numpy as np
 import pylibdl as libdl
-from pylibdl.tensor import tensor
-from pylibdl import zeros
+from pylibdl import zeros, Tensor
+from typing import List
 
 
 class Adam:
-
-    def __init__(self, parameter, lr=1e-3, b1=.9, b2=.999, eps=1e-8):
+    """
+    Adam optimizer
+    """
+    def __init__(self, parameter: List[Tensor], lr: float = 1e-3, b1: float = .9, b2: float = .999, eps: float = 1e-8):
         self.parameter = [(p, zeros(p.shape, False), zeros(p.shape, False)) for p in parameter if p.requires_grad]
         self.lr = lr
         self.b1 = b1

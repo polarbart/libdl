@@ -58,7 +58,7 @@ public:
             } else
                 result = std::make_shared<Tensor<D, RA>>(*a->data + *b->data, a->data->dimensions());
 
-            if (a->needsGradient() || b->needsGradient())
+            if ((a->needsGradient() || b->needsGradient()) && !CNodeBase::noGrad)
                 result->setGradFn(std::make_shared<Add<D, RA, RB>>(a->gradFn, b->gradFn, result));
             return result;
         }

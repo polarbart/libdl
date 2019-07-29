@@ -41,7 +41,7 @@ public:
             throw std::invalid_argument("x can't be reshaped to the given shape");
 
         auto result = std::make_shared<Tensor<D, RB>>(x->data->reshape(newShape), newShape);
-        if (x->needsGradient())
+        if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<Reshape<D, RA, RB>>(x, result));
         return result;
     }

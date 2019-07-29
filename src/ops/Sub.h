@@ -41,7 +41,7 @@ public:
         else if constexpr (RA > RB)
             result = std::make_shared<Tensor<D, std::max(RA, RB)>>(*a->data - broadcast(*b->data, *a->data), a->data->dimensions());
 
-        if (a->needsGradient() || b->needsGradient())
+        if ((a->needsGradient() || b->needsGradient()) && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<Sub<D, RA, RB>>(a->gradFn, b->gradFn, result));
         return result;
     }

@@ -49,10 +49,9 @@ void testGradientNumerically(
         const std::shared_ptr<Tensor<float, 4>> &x,
         const std::shared_ptr<Tensor<float, 4>> &f,
         const std::shared_ptr<Tensor<float, 1>> &b,
+        const std::shared_ptr<Tensor<float, 4>> &r,
         int padding,
         int stride) {
-
-    auto r = Conv2D<float>::conv2d(x, f, b, padding, stride);
 
     for (int i = 0; i < t->data->size(); i++) {
         float oldValue = t->data->data()[i];
@@ -83,9 +82,9 @@ void testConv(
 
     // numerical gradient check
     // conv ist just a linear transformation i.e. we can easily compute the numerical gradient
-    testGradientNumerically(x, x, f, b, padding, stride);
-    testGradientNumerically(f, x, f, b, padding, stride);
-    testGradientNumerically(b, x, f, b, padding, stride);
+    testGradientNumerically(x, x, f, b, r, padding, stride);
+    testGradientNumerically(f, x, f, b, r, padding, stride);
+    testGradientNumerically(b, x, f, b, r, padding, stride);
 }
 
 TEST_CASE("conv2d") {

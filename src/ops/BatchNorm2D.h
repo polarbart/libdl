@@ -94,39 +94,36 @@ public:
         const Eigen::array<long, R> broadcast{1, x->data->dimension(1), x->data->dimension(2), x->data->dimension(3)};
         const Eigen::array<int, 3> meanDims{1, 2, 3};
 
-        static Eigen::ThreadPool pool(8);
-        static Eigen::ThreadPoolDevice myDevice(&pool, 8);
-
         std::shared_ptr<Tensor<D, R>> result;
 
         // https://wiki.tum.de/display/lfdv/Batch+Normalization
         if (useRunningAvgVar) {
             Eigen::Tensor<D, R> xh(x->data->dimensions());
-            xh.device(myDevice) = (*x->data - runningMean->data->reshape(reshape).broadcast(broadcast)) /
+            xh.device(GlobalThreadPool::myDevice) = (*x->data - runningMean->data->reshape(reshape).broadcast(broadcast)) /
                                   ((*runningVar->data + runningVar->data->constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
             auto y = gamma->data->reshape(reshape).broadcast(broadcast) * xh + beta->data->reshape(reshape).broadcast(broadcast);
 
             result = std::make_shared<Tensor<D, R>>(y, x->data->dimensions());
 
-            if (x->needsGradient() || gamma->needsGradient() || beta->needsGradient())
+            if ((x->needsGradient() || gamma->needsGradient() || beta->needsGradient()) && !CNodeBase::noGrad)
                 result->setGradFn(std::make_shared<BatchNorm2D<D>>(x, gamma, beta, runningVar, std::move(xh), epsilon, result));
 
         } else {
             Eigen::Tensor<D, 1> mean(x->data->dimension(0)), var(x->data->dimension(0));
-            mean.device(myDevice) = x->data->mean(meanDims);
+            mean.device(GlobalThreadPool::myDevice) = x->data->mean(meanDims);
             auto xm = (*x->data - mean.reshape(reshape).broadcast(broadcast)).eval();
-            var.device(myDevice) = xm.square().mean(meanDims);
+            var.device(GlobalThreadPool::myDevice) = xm.square().mean(meanDims);
 
             Eigen::Tensor<D, R> xh(x->data->dimensions());
-            xh.device(myDevice) = xm / ((var + var.constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
+            xh.device(GlobalThreadPool::myDevice) = xm / ((var + var.constant(epsilon)).sqrt().eval().reshape(reshape).broadcast(broadcast));
             auto y = gamma->data->reshape(reshape).broadcast(broadcast) * xh + beta->data->reshape(reshape).broadcast(broadcast);
 
             result = std::make_shared<Tensor<D, R>>(y, x->data->dimensions());
 
-            runningMean->data->device(myDevice) = mean.constant(momentum) * mean + runningMean->data->constant(1 - momentum) * *runningMean->data;
-            runningVar->data->device(myDevice) = var.constant(momentum) * var + runningVar->data->constant(1 - momentum) * *runningVar->data;
+            runningMean->data->device(GlobalThreadPool::myDevice) = mean.constant(momentum) * mean + runningMean->data->constant(1 - momentum) * *runningMean->data;
+            runningVar->data->device(GlobalThreadPool::myDevice) = var.constant(momentum) * var + runningVar->data->constant(1 - momentum) * *runningVar->data;
 
-            if (x->needsGradient() || gamma->needsGradient() || beta->needsGradient())
+            if ((x->needsGradient() || gamma->needsGradient() || beta->needsGradient()) && !CNodeBase::noGrad)
                 result->setGradFn(std::make_shared<BatchNorm2D<D>>(x, gamma, beta, std::move(mean), std::move(var), std::move(xh), epsilon, result));
 
         }
