@@ -4,7 +4,7 @@
 #include "../Helper.h"
 
 TEST_CASE("sigmoid") {
-    auto x = trange({16, 8});
+    auto x = trange<2>({16, 8});
 
     auto r = Sigmoid<float, 2>::sigmoid(x);
 

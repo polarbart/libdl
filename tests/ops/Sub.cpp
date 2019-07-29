@@ -5,8 +5,8 @@
 
 TEST_CASE("sub") {
     SECTION("simple substraction") {
-        auto a = trange({16, 8});
-        auto b = trange({16, 8});
+        auto a = trange<2>({16, 8});
+        auto b = trange<2>({16, 8});
         auto c = Sub<float, 2, 2>::sub(a, b);
 
         auto grad = setGradAndBackward<2>(c);
@@ -16,8 +16,8 @@ TEST_CASE("sub") {
         REQUIRE(tensorEqual<2>(*b->grad, -grad));
     }
     SECTION("broadcasted substraction") {
-        auto a = trange({16, 8, 4});
-        auto b = trange({16, 8});
+        auto a = trange<3>({16, 8, 4});
+        auto b = trange<2>({16, 8});
         std::array<long, 3> reshape {16, 8, 1};
         std::array<long, 3> broadcast {1, 1, 4};
 

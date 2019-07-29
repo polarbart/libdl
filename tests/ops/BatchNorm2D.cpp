@@ -4,9 +4,9 @@
 #include "../Helper.h"
 
 TEST_CASE("batchnorm2d") {
-    auto x = trange({4, 8, 8, 2}, true, 10);
-    auto gamma = trange({4});
-    auto beta = trange({4});
+    auto x = trange<4>({4, 8, 8, 2}, true, 10);
+    auto gamma = trange<1>({4});
+    auto beta = trange<1>({4});
     auto runningMean = constant({4}, 0);
     auto runningVar = constant({4}, 1);
 

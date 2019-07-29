@@ -4,7 +4,7 @@
 #include "../Helper.h"
 
 TEST_CASE("mean") {
-    auto x = trange({16, 8, 4});
+    auto x = trange<3>({16, 8, 4});
     auto r = Mean<float, 3>::mean(x);
     r->backward(5);
     float size = x->data->size();

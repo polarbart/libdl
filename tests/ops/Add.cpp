@@ -5,8 +5,8 @@
 
 TEST_CASE("add") {
     SECTION("simple addition") {
-        auto a = trange({16, 8});
-        auto b = trange({16, 8});
+        auto a = trange<2>({16, 8});
+        auto b = trange<2>({16, 8});
         auto c = Add<float, 2, 2>::add(a, b);
 
         auto grad = setGradAndBackward<2>(c);
@@ -16,8 +16,8 @@ TEST_CASE("add") {
         REQUIRE(tensorEqual<2>(*b->grad, grad));
     }
     SECTION("broadcasted addition") {
-        auto a = trange({16, 8, 4});
-        auto b = trange({16, 8});
+        auto a = trange<3>({16, 8, 4});
+        auto b = trange<2>({16, 8});
         std::array<long, 3> reshape {16, 8, 1};
         std::array<long, 3> broadcast {1, 1, 4};
 

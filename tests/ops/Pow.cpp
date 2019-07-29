@@ -4,7 +4,7 @@
 #include "../Helper.h"
 
 TEST_CASE("pow") {
-    auto x = trange({16, 8});
+    auto x = trange<2>({16, 8});
 
     SECTION("positive power") {
         float p = 3.14159;

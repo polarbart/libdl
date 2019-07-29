@@ -4,7 +4,7 @@
 #include "../Helper.h"
 
 TEST_CASE("sum along axis") {
-    auto x = trange({16, 8, 4});
+    auto x = trange<3>({16, 8, 4});
 
     std::array<int, 2> sum {0, 2};
     auto r = SumAlongAxes<float, 3, 2>::sum(x, sum);

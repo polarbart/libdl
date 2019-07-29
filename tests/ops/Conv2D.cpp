@@ -89,9 +89,9 @@ void testConv(
 
 TEST_CASE("conv2d") {
     SECTION("odd filter size") {
-        auto x = trange({4, 8, 8, 2}, true, 50);
-        auto f = trange({4, 3, 3, 8}, true, 50);
-        auto b = trange({8});
+        auto x = trange<4>({4, 8, 8, 2}, true, 50);
+        auto f = trange<4>({4, 3, 3, 8}, true, 50);
+        auto b = trange<1>({8});
 
         SECTION("padding = 0, stride = 1") {
             testConv(x, f, b, 0, 1);
@@ -113,9 +113,9 @@ TEST_CASE("conv2d") {
         }
     }
     SECTION("even filter size") {
-        auto x = trange({4, 8, 8, 2}, true, 50);
-        auto f = trange({4, 4, 4, 8}, true, 50);
-        auto b = trange({8});
+        auto x = trange<4>({4, 8, 8, 2}, true, 50);
+        auto f = trange<4>({4, 4, 4, 8}, true, 50);
+        auto b = trange<1>({8});
 
         SECTION("padding = 0, stride = 1") {
             testConv(x, f, b, 0, 1);

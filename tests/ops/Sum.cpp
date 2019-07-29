@@ -4,7 +4,7 @@
 #include "../Helper.h"
 
 TEST_CASE("sum") {
-    auto x = trange({16, 8, 4});
+    auto x = trange<3>({16, 8, 4});
     auto r = Sum<float, 3>::sum(x);
     r->backward(5);
     float size = x->data->size();

@@ -4,9 +4,9 @@
 #include "../Helper.h"
 
 TEST_CASE("linear layer") {
-    auto x = trange({16, 8});
+    auto x = trange<2>({16, 8});
     auto w = random({16, 32});
-    auto b = trange({32});
+    auto b = trange<1>({32});
 
     auto r = Linear<float>::linear(w, x, b); // 32 x 8
 

@@ -4,7 +4,7 @@
 #include "../Helper.h"
 
 TEST_CASE("mean along axis") {
-    auto x = trange({16, 8, 4});
+    auto x = trange<3>({16, 8, 4});
 
     std::array<int, 2> mean{0, 2};
     auto r = MeanAlongAxes<float, 3, 2>::mean(x, mean);

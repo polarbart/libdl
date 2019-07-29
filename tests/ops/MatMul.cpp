@@ -4,8 +4,8 @@
 #include "../Helper.h"
 
 TEST_CASE("matmul") {
-    auto a = trange({8, 16});
-    auto b = trange({16, 4, 2});
+    auto a = trange<2>({8, 16});
+    auto b = trange<3>({16, 4, 2});
 
     auto r = MatMul<float, 2, 3>::matmul(a, b); // 8x4x2
 
