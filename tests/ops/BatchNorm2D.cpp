@@ -7,8 +7,8 @@ TEST_CASE("batchnorm2d") {
     auto x = trange<4>({4, 8, 8, 2}, true, 10);
     auto gamma = trange<1>({4});
     auto beta = trange<1>({4});
-    auto runningMean = constant({4}, 0);
-    auto runningVar = constant({4}, 1);
+    auto runningMean = constant<1>({4}, 0);
+    auto runningVar = constant<1>({4}, 1);
 
     Eigen::array<int, 3> sum{1, 2, 3};
     Eigen::array<long, 4> reshape{x->data->dimension(0), 1, 1, 1};

@@ -4,7 +4,7 @@
 #include "../Helper.h"
 
 TEST_CASE("leaky ReLU") {
-    auto x = random({16, 8});
+    auto x = random<2>({16, 8});
     auto r = LeakyRelu<float, 2>::leakyRelu(x, 0.01);
 
     auto grad = setGradAndBackward<2>(r);

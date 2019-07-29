@@ -4,7 +4,7 @@
 #include "../Helper.h"
 
 TEST_CASE("ReLU") {
-    auto x = random({16, 8});
+    auto x = random<2>({16, 8});
     auto r = Relu<float, 2>::relu(x);
 
     auto grad = setGradAndBackward<2>(r);

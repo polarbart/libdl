@@ -5,7 +5,7 @@
 
 TEST_CASE("cross entropy with logits") {
     auto x = trange<2>({16, 32});
-    auto y = constant({16, 32}, 0, false);
+    auto y = constant<2>({16, 32}, 0, false);
 
     // one hot encoding
     for (int i = 0; i < y->data->dimension(1); i++)

@@ -5,7 +5,7 @@
 
 
 TEST_CASE("maxpool2d") {
-    auto a = random({3, 16, 16, 4});
+    auto a = random<4>({3, 16, 16, 4});
     auto r = MaxPool2D<float>::maxpool2d(a, 3); // 3x5x5x4
     auto grad = setGradAndBackward<4>(r);
 
