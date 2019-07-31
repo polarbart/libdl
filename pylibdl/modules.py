@@ -6,12 +6,19 @@ from typing import Any, Optional
 
 
 class Module:
-
+    '''
+    A module represents a neural network with its weights, biases, forward pass, ...
+    A module can in it self contain other modules
+    '''
     def __init__(self):
-        self.tensors = []
+        # the parameter of this network i.e. the weights, biases, ...
+        self.tensors = []  
+        # the modules this module contains
         self.modules = []
+        # train mode, important for batch norm
         self.is_train = True
 
+    # set train mode
     def train(self, is_train: bool = True):
         self.is_train = is_train
         for m in self.modules:
@@ -19,11 +26,13 @@ class Module:
 
     def eval(self):
         self.train(False)
-
+    
+    # reset the gradient for all parameters
     def zero_grad(self):
         for t in self.tensors + self.modules:
             t.zero_grad()
 
+    # the forward pass
     def forward(self, *args, **kwargs):
         raise NotImplementedError()
 
@@ -39,14 +48,17 @@ class Module:
             self.tensors.append(v)
         elif issubclass(type(v), Module):
             self.modules.append(v)
-
+    
+    # return all paremeters (weights, biases, ...) this module contains
     def parameter(self):
         return [t for m in self.modules for t in m.parameter()] + self.tensors
 
+    # save the module
     def save(self, path: str):
         with open(path, 'wb') as f:
             pickle.dump(self, f)
 
+    # load a saved module
     @staticmethod
     def load(path: str):
         with open(path, 'rb') as f:
