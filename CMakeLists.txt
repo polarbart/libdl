@@ -21,8 +21,7 @@ endif()
 
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Catch2" OR
    NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Eigen" OR
-   NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/pybind11" OR
-   NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/spdlog")
+   NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/pybind11")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
