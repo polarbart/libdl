@@ -33,5 +33,14 @@ In the end your folder structure should look like this:
 For my final project see [Final.ipynb](Final.ipynb). Some code fragments are also located at [utils.py](utils.py).  
 (Sadly the gitlab ipynb viewer does not render everything correctly i.e. better view it on your local jupyter server)
 
+If you have any questions just write me an email (jhansjakob@googlemail.com or julius.hansjakob@tum.de). I'll try to answer as soon as possible.
+
 ## Top Level Documentation
 The top level documentation can be found [here](https://gitlab.lrz.de/hansjakob/libdl/wikis/Top-Level-Documentation).
+
+## Building the Tests
+ - `mkdir build`
+ - `cd build`
+ - `cmake ..`
+ - `make libdl_tests`
+ - `make test`
