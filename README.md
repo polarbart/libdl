@@ -9,7 +9,14 @@
 2. Then copy the compiled library to the pylibdl folder
  - The compiled library is located at `build/python` and it's filename starts with `libdl_python`
  - If you are still in the build folder you can copy it with`cp python/libdl_python.* ../pylibdl`
-
+3. python requirements
+ - your python version should be 3.5 or higher
+ - the library depends on the following packages:
+   - `numpy`
+   - `matplotlib`
+   - `scikit-image>=0.14`
+ - you can install the dependencies with `pip install -r requirements.txt`
+ 
 ## XOR Problem
 See [XOR.ipynb](XOR.ipynb)
 
