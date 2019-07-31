@@ -110,6 +110,12 @@ class LeakyReLU(Module):
         return libdl.leaky_relu(x, self.negative_slope)
 
 
+class Sigmoid(Module):
+
+    def forward(self, x: Tensor) -> Tensor:
+        return libdl.sigmoid(x)
+
+
 class MaxPool2d(Module):
 
     def __init__(self, kernel_size_and_stride: int = 2):
