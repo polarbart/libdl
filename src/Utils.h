@@ -8,6 +8,7 @@
 
 class Utils {
 public:
+    // remove std::optional from a list of optionals
     template <typename T>
     static std::vector<T> removeOption(std::initializer_list<std::optional<T>> l) {
         std::vector<T> t;

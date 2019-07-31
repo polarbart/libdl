@@ -1,11 +1,9 @@
 import numpy as np
-import pickle
 import os
 import warnings
 from skimage.io import imread
 from skimage.transform import resize
 from pylibdl.data import Dataset, DataLoader
-import pylibdl as libdl
 from pylibdl.modules import *
 import random
 
@@ -95,48 +93,3 @@ class DistractedDriver(Dataset):
 
     def __len__(self):
         return len(self.data)
-
-
-class MyResNet(Module):
-
-    def __init__(self):
-        super().__init__()
-        self.initial = Sequential(
-            Conv2D(3, 32, 5, stride=2, bias=False),  # 64x64
-            BatchNorm2d(32),
-            MaxPool2d(2),  # 32x32
-            LeakyReLU()
-        )
-
-        self.res1 = Sequential(
-            Conv2D(32, 64, 3, stride=1, bias=False),
-            BatchNorm2d(64),
-            LeakyReLU(),
-            Conv2D(64, 64, 3, stride=2, bias=False),  # 16x16
-            BatchNorm2d(64)
-        )
-        self.adapt1 = Sequential(
-            Conv2D(32, 64, 1, stride=2, bias=False),
-            BatchNorm2d(64)
-        )
-
-        self.res2 = Sequential(
-            Conv2D(64, 128, 3, stride=1, bias=False),
-            BatchNorm2d(128),
-            LeakyReLU(),
-            Conv2D(128, 128, 3, stride=1, bias=False),
-            BatchNorm2d(128)
-        )
-        self.adapt2 = Sequential(
-            Conv2D(64, 128, 1, stride=1, bias=False),
-            BatchNorm2d(128)
-        )
-
-        self.l2 = Linear(16*16*128, 10)
-
-    def forward(self, x):
-        x = self.initial(x)
-        x = libdl.leaky_relu(self.res1(x) + self.adapt1(x))
-        x = libdl.leaky_relu(self.res2(x) + self.adapt2(x))
-        x = libdl.reshape(x, (16*16*128, -1))
-        return self.l2(x)

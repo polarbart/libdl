@@ -64,7 +64,7 @@ class Linear(Module):
         return libdl.linear(self.w, x, self.b)
 
 
-class Conv2D(Module):
+class Conv2d(Module):
 
     def __init__(self, in_channels: int, out_channels: int, filter_size: int, padding: Optional[int] = None, stride: int = 1, bias: bool = True):
         super().__init__()

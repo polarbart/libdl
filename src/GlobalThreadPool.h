@@ -7,6 +7,9 @@
 #include <unsupported/Eigen/CXX11/ThreadPool>
 
 
+/*
+ * Eigen ThreadPools that can be used globally
+ * */
 
 class GlobalThreadPool {
 public:

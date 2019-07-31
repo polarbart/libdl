@@ -52,9 +52,7 @@ std::shared_ptr<Tensor<D, R>> ones(const std::array<long, R> &shape, bool requir
 template <typename D, int R>
 std::shared_ptr<Tensor<D, R>> uniform(const std::array<long, R> &shape, D low, D high, bool requiresGrad) {
     auto ret = std::make_shared<Tensor<D, R>>(shape, requiresGrad);
-    static Eigen::ThreadPool pool(8);
-    static Eigen::ThreadPoolDevice myDevice(&pool, 8);
-    ret->data->device(myDevice) = ret->data->random() * (ret->data->constant(high) - ret->data->constant(low)) - ret->data->constant(low);
+    ret->data->device(GlobalThreadPool::myDevice) = ret->data->random() * (ret->data->constant(high) - ret->data->constant(low)) - ret->data->constant(low);
     if (requiresGrad)
         ret->setGradFn(std::make_shared<Leaf<D, R>>(ret));
     return ret;
@@ -67,10 +65,9 @@ std::shared_ptr<Tensor<D, R>> centeredUniform(const std::array<long, R> &shape, 
 
 template <typename D, int R>
 std::shared_ptr<Tensor<D, R>> normal(const std::array<long, R> &shape, D mean, D std, bool requiresGrad) {
+    static Eigen::internal::NormalRandomGenerator<D> rng;
     auto ret = std::make_shared<Tensor<D, R>>(shape, requiresGrad);
-    static Eigen::ThreadPool pool(8);
-    static Eigen::ThreadPoolDevice myDevice(&pool, 8);
-    ret->data->device(myDevice) = ret->data->random(Eigen::internal::NormalRandomGenerator<D>()) * ret->data->constant(std) + ret->data->constant(mean);
+    ret->data->device(GlobalThreadPool::myDevice) = ret->data->random(rng) * ret->data->constant(std) + ret->data->constant(mean);
     if (requiresGrad)
         ret->setGradFn(std::make_shared<Leaf<D, R>>(ret));
     return ret;

@@ -27,7 +27,8 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Catch2" OR
 endif()
 
 enable_testing()
-#add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Eigen)
+# add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Eigen)
+# set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-header-filter=.;-checks=-*,clang-analyzer-*,clang-analyzer-cplusplus*,modernize-*,performance-*,openmp-*")
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Catch2)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -43,5 +44,3 @@ set(LIBDL_TESTS libdl_tests)
 add_subdirectory(src)
 add_subdirectory(python)
 add_subdirectory(tests)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -march=native -O3")

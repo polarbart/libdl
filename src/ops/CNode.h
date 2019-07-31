@@ -12,15 +12,23 @@
 template <typename D, int R>
 class Tensor;
 
+/*
+ * This class represents a computational note within the computational graph.
+ * Every operation extends this class.
+ * The operation then computes the gradients of its parents.
+ * */
+
 template <typename D, int R>
 class CNode : public CNodeBase {
 public:
 
+    // alocate an empty gradient tensor
     void emptyGrad() {
         grad = std::make_shared<Eigen::Tensor<D, R>>(shape);
         resetGrad = false;
     }
 
+    // add a gradient onto the current gradient
     template <typename Derived>
     void addGrad(const Derived &g) {
         if (resetGrad) {
@@ -32,6 +40,7 @@ public:
             grad->device(GlobalThreadPool::myDevice) += g;
     }
 
+    // reset the gradient
     void zeroGrad() {
         resetGrad = true;
     }
@@ -42,6 +51,9 @@ public:
 protected:
     CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::shared_ptr<Tensor<D, R>> &holder) : CNodeBase(p), shape(holder->data->dimensions()), holder(holder) {}
 
+    /*
+     * set the gradient of the tensor holding this computational node
+     * */
     void finishComputeGradient() {
         if (holder.expired())
             return;
