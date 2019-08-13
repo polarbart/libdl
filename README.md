@@ -56,9 +56,9 @@ I.e. you don't have to define your computational graph in beforehand. It is crea
 
 This is achieved with a slightly more advanced tensor class, which not only holds a reference to its data `Tensor::data`, but also a reference to its gradient `Tensor::data` and a reference to the operation that created that tensor `Tensor::gradFn`.
 
-When the `Tensor::backward()` function is called, the gradients of all predecessors with respect to the tensor calling 'backward' are computed.
+When the `Tensor::backward()` function is called, the gradients for all predecessors are computed. I.e. the gradient of the tensor calling 'backward' with respect to each predecessor.
 
-The tensor class can be found at `src/Tensor.h`. The operations like add, conv, matmul, batchnorm, ... can be found at `src/ops/`. Every operation has a static method which computes the 'forward pass' and a method called computeGradients which computes the 'backward pass', i.e. the gradients of its parents.
+The tensor class can be found at `src/Tensor.h`. The operations like add, conv, matmul, batchnorm, ... can be found at `src/ops/`. Each operation has a static method which computes the 'forward pass' and a method called 'computeGradients' which computes the 'backward pass', i.e. the gradients for its parents.
 
 ## A Simple Example
 Let's look at the function
@@ -98,7 +98,7 @@ Let's to these calculations in python:
 [ 73 ]
 >>> print(a.grad, b.grad)
 None None
->>> y.backward()  # computes the gradient of all predecessors with respect to y
+>>> y.backward()  # computes the gradient for all predecessors
 >>> print(a.grad, b.grad)
 [ -6 ] [ 48 ]
 ```
