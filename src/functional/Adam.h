@@ -4,7 +4,7 @@
 
 #include "../Tensor.h"
 
-template<typename D, int R>
+template<typename D,std::int64_t R>
 class Adam {
 public:
 
@@ -35,7 +35,7 @@ public:
         if (b1 < 0 || b2 < 0 || eps < 0)
             throw std::invalid_argument("beta1, beta2 and epsilon must not be negative");
 
-        for (int i = 0; i < R; i++)
+        for (std::int64_t i = 0; i < R; i++)
             if (parameter->data->dimension(i) != m->data->dimension(i) || parameter->data->dimension(i) != v->data->dimension(i))
                 throw std::invalid_argument("the shapes of parameter m and v must match");
 

@@ -6,7 +6,7 @@
 #include "../Utils.h"
 
 
-template <typename D, int R>
+template <typename D, std::int64_t R>
 class LeakyRelu : public CNode<D, R> {
 
 public:

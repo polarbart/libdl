@@ -29,12 +29,27 @@ enable_testing()
 # add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Eigen)
 # set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-header-filter=.;-checks=-*,clang-analyzer-*,clang-analyzer-cplusplus*,modernize-*,performance-*,openmp-*")
 
+# list(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/libs/Eigen)
+# set(Eigen3_DIR ${PROJECT_SOURCE_DIR}/libs/Eigen/cmake)
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Catch2)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenMP)
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/pybind11)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/libs/Catch2/contrib)
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/pylibdl/bin)
+
+if(UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -O3 -march=native")
+endif (UNIX)
+
+if(WIN32)
+    add_compile_options(/wd4305)
+    add_compile_options(/wd4267)
+    add_compile_options(/wd4554)
+endif(WIN32)
 
 set(LIBDL_SRC libdl_src)
 set(LIBDL_PYTHON libdl_python)

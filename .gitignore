@@ -7,3 +7,4 @@ cmake-build-debug/
 dist/
 libdl.egg-info/
 distracted_driver
+pylibdl/bin

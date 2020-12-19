@@ -5,15 +5,16 @@
 
 #include "../Tensor.h"
 #include "../Utils.h"
+#include <numeric>
 
 
-template <typename D, int R>
+template <typename D, std::int64_t R>
 class Mean : public CNode<D, 0> {
 public:
     Mean(
             const std::optional<std::shared_ptr<CNode<D, R>>> &cx,
             const std::shared_ptr<Tensor<D, 0>> &result,
-            const std::array<long, R> &shape)
+            const std::array<std::int64_t, R> &shape)
             : CNode<D, 0>(Utils::removeOption<std::shared_ptr<CNodeBase>>({cx}), result),
             cx(cx),
             shape(shape) {}
@@ -28,7 +29,7 @@ public:
     static std::shared_ptr<Tensor<D, 0>> mean(
             const std::shared_ptr<Tensor<D, R>> &x) {
 
-        auto result = std::make_shared<Tensor<D, 0>>(x->data->mean(), std::array<long, 0> {});
+        auto result = std::make_shared<Tensor<D, 0>>(x->data->mean(), std::array<std::int64_t, 0> {});
         if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<Mean<D, R>>(x->gradFn, result, x->data->dimensions()));
         return result;
@@ -36,18 +37,18 @@ public:
 
     void computeGradients() override {
         if (cx.has_value()) {
-            std::array<long, R> r;
+            std::array<std::int64_t, R> r;
             r.fill(1);
             auto t = CNode<D, 0>::grad->reshape(r).broadcast(shape);
-            long size = std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>());
-            cx.value()->addGrad(t / t.constant(size));
+            std::int64_t size = std::accumulate(std::begin(shape), std::end(shape), (std::int64_t) 1, std::multiplies<>());
+            cx.value()->addGrad(t / t.constant(static_cast<std::float_t>(size)));
         }
         CNode<D, 0>::finishComputeGradient();
     }
 
 private:
     std::optional<std::shared_ptr<CNode<D, R>>> cx;
-    std::array<long, R> shape;
+    std::array<std::int64_t, R> shape;
 };
 
 

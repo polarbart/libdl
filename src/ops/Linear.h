@@ -57,14 +57,14 @@ public:
             throw std::invalid_argument("shapes of w and b mismatch");
 
 
-       std::array<long, R> shape {w->data->dimension(1), x->data->dimension(1)};
+       std::array<std::int64_t, R> shape {w->data->dimension(1), x->data->dimension(1)};
 
-        auto t = w->data->contract(*x->data, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(0, 0)});
+        auto t = w->data->contract(*x->data, Eigen::array<Eigen::IndexPair <std::int64_t>, 1>{Eigen::IndexPair <std::int64_t>(0, 0)});
         std::shared_ptr<Tensor<D, R>> result;
 
         if (b != nullptr) {
-            Eigen::array<long, R> reshape {shape[0], 1};
-            Eigen::array<long, R> broadcast {1, shape[1]};
+            Eigen::array<std::int64_t, R> reshape {shape[0], 1};
+            Eigen::array<std::int64_t, R> broadcast {1, shape[1]};
             result = std::make_shared<Tensor<D, R>>(t + b->data->reshape(reshape).broadcast(broadcast), shape);
         } else
             result = std::make_shared<Tensor<D, R>>(t, shape);
@@ -80,11 +80,11 @@ public:
 
     void computeGradients() override {
         if (cw.has_value())
-            cw.value()->addGrad(x->contract(*CNode<D, R>::grad, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(1, 1)}));
+            cw.value()->addGrad(x->contract(*CNode<D, R>::grad, Eigen::array<Eigen::IndexPair <std::int64_t>, 1>{Eigen::IndexPair <std::int64_t>(1, 1)}));
         if (cx.has_value())
-            cx.value()->addGrad(w->contract(*CNode<D, R>::grad, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(1, 0)}));
+            cx.value()->addGrad(w->contract(*CNode<D, R>::grad, Eigen::array<Eigen::IndexPair <std::int64_t>, 1>{Eigen::IndexPair <std::int64_t>(1, 0)}));
         if (cb.has_value())
-            cb.value()->addGrad(CNode<D, R>::grad->sum(Eigen::array<int, 1> {1}));
+            cb.value()->addGrad(CNode<D, R>::grad->sum(Eigen::array <std::int64_t, 1> {1}));
         CNode<D, R>::finishComputeGradient();
     }
 

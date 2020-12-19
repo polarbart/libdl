@@ -37,14 +37,14 @@ public:
             const std::shared_ptr<Tensor<D, R>> &x,
             const std::shared_ptr<Tensor<D, R>> &y) {
 
-        for (int i = 0; i < R; i++)
+        for (std::int64_t i = 0; i < R; i++)
             if (x->data->dimension(i) != y->data->dimension(i))
                 throw std::invalid_argument("the shapes of x and y must match");
 
         #pragma omp parallel for
-        for (int i = 0; i < y->data->dimension(1); i++) {
+        for (std::int64_t i = 0; i < y->data->dimension(1); i++) {
             bool hasOne = false;
-            for (int j = 0; j < y->data->dimension(0); j++) {
+            for (std::int64_t j = 0; j < y->data->dimension(0); j++) {
                 if ((*y->data)(j, i) == 1) {
                     if (hasOne)
                         throw std::invalid_argument("y is not one hot encoded");
@@ -57,17 +57,17 @@ public:
                 throw std::invalid_argument("y is not one hot encoded");
         }
 
-        Eigen::array<long, R> reshape = x->data->dimensions();
+        Eigen::array<std::int64_t, R> reshape = x->data->dimensions();
         reshape[0] = 1;
-        Eigen::array<long, R> broadcast;
+        Eigen::array<std::int64_t, R> broadcast;
         broadcast.fill(1);
         broadcast[0] = x->data->dimension(0);
-        auto i1 = (*x->data - x->data->maximum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast)).exp();
+        auto i1 = (*x->data - x->data->maximum(Eigen::array <std::int64_t, 1> {0}).eval().reshape(reshape).broadcast(broadcast)).exp();
 
         Eigen::Tensor<D, R> softmax(x->data->dimensions());
-        softmax.device(GlobalThreadPool::myDevice) = i1 / i1.sum(Eigen::array<int, 1> {0}).eval().reshape(reshape).broadcast(broadcast) + i1.constant(1e-64);
+        softmax.device(GlobalThreadPool::myDevice) = i1 / i1.sum(Eigen::array <std::int64_t, 1> {0}).eval().reshape(reshape).broadcast(broadcast) + i1.constant(1e-32f);
         auto mce = (-softmax.log() * *y->data).mean();
-        auto result = std::make_shared<Tensor<D, 0>>(mce * mce.constant(x->data->dimension(0)), std::array<long, 0> {});
+        auto result = std::make_shared<Tensor<D, 0>>(mce * mce.constant(static_cast<std::float_t>(x->data->dimension(0))), std::array<std::int64_t, 0> {});
         if (x->needsGradient() && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<CrossEntropyWithLogits<D>>(x, y, std::move(softmax), result));
         return result;

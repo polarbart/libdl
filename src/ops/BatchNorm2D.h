@@ -90,9 +90,9 @@ public:
         if (epsilon < 0)
             throw std::invalid_argument("epsilon must not be negative");
 
-        const Eigen::array<long, R> reshape{x->data->dimension(0), 1, 1, 1};
-        const Eigen::array<long, R> broadcast{1, x->data->dimension(1), x->data->dimension(2), x->data->dimension(3)};
-        const Eigen::array<int, 3> meanDims{1, 2, 3};
+        const Eigen::array<std::int64_t, R> reshape{x->data->dimension(0), 1, 1, 1};
+        const Eigen::array<std::int64_t, R> broadcast{1, x->data->dimension(1), x->data->dimension(2), x->data->dimension(3)};
+        const Eigen::array <std::int64_t, 3> meanDims{1, 2, 3};
 
         std::shared_ptr<Tensor<D, R>> result;
 
@@ -132,21 +132,21 @@ public:
 
     void computeGradients() override {
         // #efficient
-        const Eigen::array<long, R> reshape{x->dimension(0), 1, 1, 1};
-        const Eigen::array<long, R> broadcast{1, x->dimension(1), x->dimension(2), x->dimension(3)};
-        const Eigen::array<int, 3> meanDims{1, 2, 3};
+        const Eigen::array<std::int64_t, R> reshape{x->dimension(0), 1, 1, 1};
+        const Eigen::array<std::int64_t, R> broadcast{1, x->dimension(1), x->dimension(2), x->dimension(3)};
+        const Eigen::array <std::int64_t, 3> meanDims{1, 2, 3};
         if (cx.has_value()) {
             if (useRunningAvgVar) {
                 cx.value()->addGrad((*gamma / (*runningVar + runningVar->constant(epsilon)).sqrt()).eval().reshape(reshape).broadcast(broadcast) * *CNode<D, R>::grad);
             } else {
                 auto rvpe = (var + var.constant(epsilon)).sqrt().eval();
                 auto xmm = (*x - mean.reshape(reshape).broadcast(broadcast)).eval();
-                int m = x->dimension(1) * x->dimension(2) * x->dimension(3);
+                std::int64_t m = x->dimension(1) * x->dimension(2) * x->dimension(3);
 
                 auto dxh = (gamma->reshape(reshape).broadcast(broadcast) * *CNode<D, R>::grad).eval();
                 auto dv = ((dxh * xmm).sum(meanDims) * var.constant(-.5) / rvpe.cube()).eval();
                 // auto dm = -dxh.sum(meanDims) / rvpe + dv * xmm.mean(meanDims) * dv.constant(-2);
-                auto dx = -dxh / rvpe.reshape(reshape).broadcast(broadcast) + dv.reshape(reshape).broadcast(broadcast) * (xmm * xmm.constant(2. / m) + xmm.constant(1. / m));
+                auto dx = -dxh / rvpe.reshape(reshape).broadcast(broadcast) + dv.reshape(reshape).broadcast(broadcast) * (xmm * xmm.constant(2.f / m) + xmm.constant(1.f / m));
                 cx.value()->addGrad(dx);
             }
         }

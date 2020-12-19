@@ -3,10 +3,11 @@
 #define LIBDL_RESHAPE_H
 
 
+#include <numeric>
 #include "CNode.h"
 #include "../Utils.h"
 
-template <typename D, int RA, int RB>
+template <typename D, std::int64_t RA, std::int64_t RB>
 class Reshape : public CNode<D, RB> {
 
 public:
@@ -28,15 +29,15 @@ public:
      * */
     static std::shared_ptr<Tensor<D, RB>> reshape(
             const std::shared_ptr<Tensor<D, RA>> &x,
-            std::array<long, RB> newShape) {
+            std::array<std::int64_t, RB> newShape) {
 
-        for (int i = 0; i < RB; i++)
+        for (std::int64_t i = 0; i < RB; i++)
             if (newShape[i] == -1) {
-                newShape[i] = x->data->size() / std::accumulate(std::begin(newShape), std::end(newShape), -1, std::multiplies<>());
+                newShape[i] = x->data->size() / std::accumulate(std::begin(newShape), std::end(newShape), (std::int64_t) -1, std::multiplies<>());
                 break;
             }
 
-        int newSize = std::accumulate(std::begin(newShape), std::end(newShape), 1, std::multiplies<>());
+        std::int64_t newSize = std::accumulate(std::begin(newShape), std::end(newShape), (std::int64_t) 1, std::multiplies<>());
         if (newSize != x->data->size())
             throw std::invalid_argument("x can't be reshaped to the given shape");
 
@@ -53,7 +54,7 @@ public:
     }
 
 private:
-    std::array<long, RA> oldShape;
+    std::array<std::int64_t, RA> oldShape;
     std::optional<std::shared_ptr<CNode<D, RA>>> cx;
 };
 

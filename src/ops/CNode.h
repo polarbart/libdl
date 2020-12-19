@@ -9,7 +9,7 @@
 #include "CNodeBase.h"
 #include "../GlobalThreadPool.h"
 
-template <typename D, int R>
+template <typename D,std::int64_t R>
 class Tensor;
 
 /*
@@ -18,7 +18,7 @@ class Tensor;
  * The operation then computes the gradients of its parents.
  * */
 
-template <typename D, int R>
+template <typename D,std::int64_t R>
 class CNode : public CNodeBase {
 public:
 
@@ -46,7 +46,7 @@ public:
     }
 
     std::shared_ptr<Eigen::Tensor<D, R>> grad;
-    const std::array<long, R> shape;
+    const std::array<std::int64_t, R> shape;
 
 protected:
     CNode(const std::vector<std::shared_ptr<CNodeBase>>& p, const std::shared_ptr<Tensor<D, R>> &holder) : CNodeBase(p), shape(holder->data->dimensions()), holder(holder) {}

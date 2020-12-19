@@ -4,10 +4,10 @@
 
 #include "CNode.h"
 
-template <typename D, int R>
+template <typename D, std::int64_t R>
 class Tensor;
 
-template <typename D, int R>
+template <typename D, std::int64_t R>
 class Leaf : public CNode<D, R> {
 public:
     explicit Leaf(const std::shared_ptr<Tensor<D, R>> &t) : CNode<D, R>(std::vector<std::shared_ptr<CNodeBase>> {}, t) {}

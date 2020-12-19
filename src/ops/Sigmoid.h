@@ -5,7 +5,7 @@
 #include "../Tensor.h"
 #include "../Utils.h"
 
-template <typename D, int R>
+template <typename D, std::int64_t R>
 class Sigmoid : public CNode<D, R> {
 public:
     Sigmoid(

@@ -5,15 +5,15 @@
 #include "CNode.h"
 #include "../Utils.h"
 
-template <typename D, int RA, int RB>
-class Sub : public CNode<D, std::max(RA, RB)>  {
+template <typename D, std::int64_t RA, std::int64_t RB>
+class Sub : public CNode<D, std::max<std::int64_t>(RA, RB)>  {
 
 public:
     Sub(
             const std::optional<std::shared_ptr<CNode<D, RA>>> &ca,
             const std::optional<std::shared_ptr<CNode<D, RB>>> &cb,
-            const std::shared_ptr<Tensor<D, std::max(RA, RB)>> &t)
-            : CNode<D, std::max(RA, RB)>(Utils::removeOption<std::shared_ptr<CNodeBase>>({ca, cb}), t),
+            const std::shared_ptr<Tensor<D, std::max<std::int64_t>(RA, RB)>> &t)
+            : CNode<D, std::max<std::int64_t>(RA, RB)>(Utils::removeOption<std::shared_ptr<CNodeBase>>({ca, cb}), t),
             ca(ca),
             cb(cb) {};
 
@@ -28,18 +28,18 @@ public:
      *
      * \return a new tensor of the shape with more dimensions
      * */
-    static std::shared_ptr<Tensor<D, std::max(RA, RB)>> sub(
+    static std::shared_ptr<Tensor<D, std::max<std::int64_t>(RA, RB)>> sub(
             std::shared_ptr<Tensor<D, RA>> a,
             std::shared_ptr<Tensor<D, RB>> b) {
 
-        std::shared_ptr<Tensor<D, std::max(RA, RB)>> result;
+        std::shared_ptr<Tensor<D, std::max<std::int64_t>(RA, RB)>> result;
 
         if constexpr (RA == RB)
             result = std::make_shared<Tensor<D, RA>>(*a->data - *b->data, a->data->dimensions());
         else if constexpr (RA < RB)
-            result = std::make_shared<Tensor<D, std::max(RA, RB)>>(broadcast(*a->data, *b->data) - *b->data, b->data->dimensions());
+            result = std::make_shared<Tensor<D, std::max<std::int64_t>(RA, RB)>>(broadcast(*a->data, *b->data) - *b->data, b->data->dimensions());
         else if constexpr (RA > RB)
-            result = std::make_shared<Tensor<D, std::max(RA, RB)>>(*a->data - broadcast(*b->data, *a->data), a->data->dimensions());
+            result = std::make_shared<Tensor<D, std::max<std::int64_t>(RA, RB)>>(*a->data - broadcast(*b->data, *a->data), a->data->dimensions());
 
         if ((a->needsGradient() || b->needsGradient()) && !CNodeBase::noGrad)
             result->setGradFn(std::make_shared<Sub<D, RA, RB>>(a->gradFn, b->gradFn, result));
@@ -59,31 +59,31 @@ public:
             else
                 cb.value()->addGrad(-(*CNode<D, RB>::grad));
         }
-        CNode<D, std::max(RA, RB)>::finishComputeGradient();
+        CNode<D, std::max<std::int64_t>(RA, RB)>::finishComputeGradient();
     }
 
 private:
     std::optional<std::shared_ptr<CNode<D, RA>>> ca;
     std::optional<std::shared_ptr<CNode<D, RB>>> cb;
 
-    static auto broadcast(const Eigen::TensorMap<Eigen::Tensor<D, std::min(RA, RB)>> &b, const Eigen::TensorMap<Eigen::Tensor<D, std::max(RA, RB)>> &a) {
-        std::array<int, std::max(RA, RB)> reshape{};
-        std::array<int, std::max(RA, RB)> broadcast{};
-        for (int i = 0; i < std::min(RA, RB); ++i) {
+    static auto broadcast(const Eigen::TensorMap<Eigen::Tensor<D, std::min<std::int64_t>(RA, RB)>> &b, const Eigen::TensorMap<Eigen::Tensor<D, std::max<std::int64_t>(RA, RB)>> &a) {
+        std::array <std::int64_t, std::max<std::int64_t>(RA, RB)> reshape{};
+        std::array <std::int64_t, std::max<std::int64_t>(RA, RB)> broadcast{};
+        for (std::int64_t i = 0; i < std::min<std::int64_t>(RA, RB); ++i) {
             reshape[i] = b.dimension(i);
             broadcast[i] = 1;
         }
-        for (int i = std::min(RA, RB); i < std::max(RA, RB); ++i) {
+        for (std::int64_t i = std::min<std::int64_t>(RA, RB); i < std::max<std::int64_t>(RA, RB); ++i) {
             reshape[i] = 1;
             broadcast[i] = a.dimension(i);
         }
         return b.reshape(reshape).broadcast(broadcast);
     }
 
-    static auto sum(const Eigen::Tensor<D, std::max(RA, RB)> &x) {
-        std::array<int, std::max(RA, RB) - std::min(RA, RB)> sum {};
-        for (int i = 0; i < std::max(RA, RB) - std::min(RA, RB); ++i)
-            sum[i] = std::min(RA, RB) + i;
+    static auto sum(const Eigen::Tensor<D, std::max<std::int64_t>(RA, RB)> &x) {
+        std::array <std::int64_t, std::max<std::int64_t>(RA, RB) - std::min<std::int64_t>(RA, RB)> sum {};
+        for (std::int64_t i = 0; i < std::max<std::int64_t>(RA, RB) - std::min<std::int64_t>(RA, RB); ++i)
+            sum[i] = std::min<std::int64_t>(RA, RB) + i;
         return x.sum(sum);
     }
 };

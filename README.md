@@ -1,92 +1,75 @@
-# My super awesome deep learning library
+# My Super Awesome Deep Learning Library
+
+This is a fully functioning deep learning library which was created for the practical course "Deep Learning From Scratch in C++" at Technical University of Munich. 
+
+It includes 
+ - Autograd capabilities
+ - Operations such as matrix multiplications, 2D convolutions, batch norm, ReLU, cross entropy, etc. 
+ - An implementation of the Adam optimizer
+ - Python bindings
+ - Multi core processing
+
+However it does not include GPU support.
 
 ## Installation
-1. Compile the library
- - `mkdir build`
- - `cd build`
- - `cmake ..`
- - `make libdl_python`
-2. Then copy the compiled library to the pylibdl folder
- - The compiled library is located at `build/python` and it's filename starts with `libdl_python`
- - If you are still in the build folder you can copy it with`cp python/libdl_python.* ../pylibdl`
-3. python requirements  
+### Compile the Library
+```
+mkdir build
+cd build
+cmake ..
+cmake --build . --target libdl_python  --config Release
+```
+Note that the library is not installed globally. It is copied to the folder `pylibdl`.
+### Dependencies  
  - Your python version should be 3.5 or higher
  - The library depends on the following packages:
    - `numpy`
    - `matplotlib`
    - `scikit-image>=0.14`
  - You can install the dependencies with `pip install -r requirements.txt`
- 
-## XOR Problem
-See [XOR.ipynb](XOR.ipynb)
 
-## MNIST
-See [MNIST.ipynb](MNIST.ipynb)  
-Training and testing takes about 30 seconds. 
+# How it Works
+The library uses a dynamic computational graph and is inspired by PyTorch. 
+I. e. you don't have to define your computational graph in beforehand. It is created implicitly while you do your computations.
 
-## Final Project
-First download the [distracted driver dataset](https://www.kaggle.com/c/state-farm-distracted-driver-detection/data) and extract it into the folder `distracted_driver`.  
-Don't forget to extract the images from `ìmgs.zip`.  
-In the end your folder structure should look like this:
-```
-|-- libdl/  
-|   |-- distracted_driver/  
-|   |   |-- test/  
-|   |   |-- train/  
-|   |   |-- driver_imgs_list.csv  
-|   |   |-- sample_submission.csv  
-|   |-- ...  
-```
-For my final project see [Final.ipynb](Final.ipynb). Some code fragments are also located at [utils.py](utils.py).  
-(Sadly the gitlab ipynb viewer does not render everything correctly i.e. better view it on your local jupyter server)
+This is achieved with a slightly more advanced tensor class, which not only holds a reference to its data `Tensor::data`, 
+but also a reference to its gradient `Tensor::grad` and a reference to the operation that created that tensor `Tensor::gradFn`.
 
-## Top Level Documentation
-The top level documentation can be found [here](https://gitlab.lrz.de/hansjakob/libdl/wikis/Top-Level-Documentation).
+When the `Tensor::backward()` function is called, the gradients for all predecessors are computed. 
+More precisely the gradient of the tensor calling 'backward' with respect to each predecessor is computed.
 
-## Building the Tests
- - `mkdir build`
- - `cd build`
- - `cmake ..`
- - `make libdl_tests`
- - `make test`
-
-# Examples
-My library uses a dynamic computational graph and is closely modeled after PyTorch. 
-I.e. you don't have to define your computational graph in beforehand. It is created implicitly while you do your compuations.
-
-This is achieved with a slightly more advanced tensor class, which not only holds a reference to its data `Tensor::data`, but also a reference to its gradient `Tensor::data` and a reference to the operation that created that tensor `Tensor::gradFn`.
-
-When the `Tensor::backward()` function is called, the gradients for all predecessors are computed. I.e. the gradient of the tensor calling 'backward' with respect to each predecessor.
-
-The tensor class can be found at `src/Tensor.h`. The operations like add, conv, matmul, batchnorm, ... can be found at `src/ops/`. Each operation has a static method which computes the 'forward pass' and a method called 'computeGradients' which computes the 'backward pass', i.e. the gradients for its parents.
+The tensor class can be found at [`src/Tensor.h`](src/Tensor.h). 
+The operations like add, conv, matmul, batch norm, ... can be found at [`src/ops/`](src/ops). 
+Each operation has a static method which computes the 'forward pass' 
+and a method called `computeGradients` which computes the 'backward pass', i. e. the gradients for its parents.
 
 ## A Simple Example
 Let's look at the function
-```math
+```
 f(a, b) = a^2 + b^3
 ```
-The derivatives towards $`a`$ and $`b`$ are: 
-```math 
-\frac{\partial f}{\partial a} = 2a  
+The derivatives towards `a` and `b` are: 
+```
+𝛿f/𝛿a = 2*a  
 ```
 
 ```math 
-\frac{\partial f}{\partial b}  = 3b^2
+𝛿f/𝛿b = 3*b^2
 ```
-If we evaluate $`f`$ at $`f(-3, 4)`$  
+If we evaluate `f` at `f(-3, 4)` 
 ```math 
 f(2, 3) = (-3)^2 + 4^3 = 9 + 64 = 73
 ```
-The derivatives with respect to $`a`$ and $`b`$ are:  
+the derivatives with respect to `a` and `b` are:  
 ```math 
-\frac{\partial f}{\partial a} = 2\cdot (-3) = -6  
+𝛿f/𝛿a = 2*(-3) = -6  
 ```
 
 ```math 
-\frac{\partial f}{\partial b}  = 3\cdot 4^2 = 48
+𝛿f/𝛿b = 3*4^2 = 48
 ```
 
-Let's to these calculations in python:
+Let's do these calculations in python:
 
 ```python
 >>> from pylibdl import tensor
@@ -108,7 +91,7 @@ The animation below visualizes what happens under the hood.
 
 ## XOR Example
  - The example below shows how this library can be used to train neural networks
- - You can look at `pylibdl/modules.py` if you want to get a deeper understanding of how the layers/modules are implemented
+ - You can look at [`pylibdl/modules.py`](pylibdl/modules.py) if you want to get a deeper understanding of how the layers/modules are implemented
 
 ```python
 import numpy as np
@@ -153,22 +136,28 @@ optimizer = Adam(model.parameter(), lr)
 print("epoch |  0^0 |  0^1 |  1^0 |  1^1 | loss")
 for epoch in range(epochs):
     
-    # forward pass, behind the scenes XORClassifier.forward is called
+    # forward pass (behind the scenes XORClassifier.forward is called)
     pred = model(X)
     
     # compute the loss between the predictions and the true labels
+    # in this case mean squared error is used for simplicity
     loss = libdl.mean((pred - y)**2)
     
     # backpropagate the loss
     loss.backward()
     
-    # change the parameters of the model so that the loss is minimized and then reset the gradients
+    # apply and reset the gradients
     optimizer.step()
     optimizer.zero_grad()
     
     if (epoch % log_every) == 0 or epoch == (epochs - 1):
-        print(f"{epoch:5d} | {pred.data[0, 0]:.2f} | {pred.data[0, 1]:.2f} | {pred.data[0, 2]:.2f} | {pred.data[0, 3]:.2f} | {loss.data[0]:.6f}")
+        print(f"{epoch:5d} | {pred.data[0, 0]:.2f} | {pred.data[0, 1]:.2f} | "
+              f"{pred.data[0, 2]:.2f} | {pred.data[0, 3]:.2f} | {loss.data[0]:.6f}")
+```
 
+Output:
+
+```
 epoch |  0^0 |  0^1 |  1^0 |  1^1 | loss
     0 | 0.62 | 0.57 | 0.60 | 0.56 | 0.260224
  1000 | 0.12 | 0.86 | 0.90 | 0.11 | 0.013432
@@ -181,4 +170,101 @@ epoch |  0^0 |  0^1 |  1^0 |  1^1 | loss
  8000 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000102
  9000 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000061
  9999 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000037
+```
+
+ 
+## Final Project
+
+For the final project I trained a ResNet-like network on the [distracted driver dataset](https://www.kaggle.com/c/state-farm-distracted-driver-detection/data).
+Additionally, I did an [adversarial attack](https://arxiv.org/abs/1312.6199) for some images such that the network classifies them as "save driving", regardless of their true label.
+
+It can be found at [Final.ipynb](Final.ipynb). Some code fragments are also located at [utils.py](utils.py).  
+(Sadly the GitHub ipynb viewer does not render everything correctly i. e. if possible view it on your local jupyter server)
+
+In order to train the model by yourself, 
+download the [distracted driver dataset](https://www.kaggle.com/c/state-farm-distracted-driver-detection/data) 
+and extract it into the folder `distracted_driver`.
+Don't forget to extract the images from `imgs.zip`.  
+In the end your folder structure should look like this:
+```
+|-- libdl/  
+|   |-- distracted_driver/  
+|   |   |-- test/  
+|   |   |-- train/  
+|   |   |-- driver_imgs_list.csv  
+|   |   |-- sample_submission.csv  
+|   |-- Final.ipynb
+|   |-- ...
+```
+
+## MNIST
+See [MNIST.ipynb](MNIST.ipynb)  
+Training and testing takes about 30 seconds. 
+
+# Top Level Documentation
+- The library uses Eigen tensors
+- The library can be found at [`src`](src)
+   - [`src/ops`](src/ops) contains all the operations on tensors like addition, convolution, max pool, batch norm, ...
+   - [`src/functional`](src/functional) contains all operations that do not require gradients such as the computations for Adam 
+- The python bindings can be found in the folder [`python`](python)
+- The tests can be found under [`tests`](tests)
+- The slides of the final presentation can be found [here](https://tumde-my.sharepoint.com/:p:/g/personal/julius_hansjakob_tum_de/EZiiWbJhPVtFjYyqcl7SSVcBREcJFnrrrAgrX3BBRK6pOg?e=iRo2kZ)
+
+## Code Structure
+- The library contains two important classes: `Tensor<D, R>` and `CNode<D, R>`
+- The image below shows a simplified class diagram
+  ![class_diagram](class_diagram.png)
+
+### The `Tensor<D, R>` Class
+- *D* specifies the datatype (usually float)
+- *R* specifies the number of dimensions the tensor has
+- `Tensor<D, R>::data` holds the actual tensor
+- `Tensor<D, R>::grad` holds the gradient of this tensor
+- `Tensor<D, R>::gradFn` holds the operation that created this tensor in order to compute the gradients for its parents
+- `Tensor<D, R>::requiresGrad` indicates whether the gradient for this tensor should be stored in `Tensor<D, R>::grad`
+- The `Tensor<D, R>::backward()` function computes the gradient for all predecessors, that require a gradient, w. r. t. the tensor calling it
+- If `Tensor<D, R>::requiresGrad` is set to *true* `Tensor<D, R>::gradFn` always contains a value. 
+  In particular, this means, if no operation created this tensor, 
+  then `Tensor<D, R>::gradFn` is a `Leaf<D, R>` object which just passes the gradient it receives to the tensor
+
+### The `CNode<D, R>` Class (and its Parent `CNodeBase`)
+- CNode represents a computational node in a computational graph
+- `CNode<D, R>::grad` holds the gradient of this computational node which is set by its children
+- The virtual function `CNodeBase::computeGradients()` computes the gradient (i. e. sets `CNode<D, R>::grad`) for all parents of this computational node. 
+  Additionally it sets `Tensor<D, R>::grad` of its holder if `Tensor<D, R>::requiresGrad` is true
+- `CNode<D, R>::holder` is a weak reference to the tensor which is represented by this computational node
+- Every computational operation inherits `CNode<D, R>`, which is important for the automatic differentiation
+- E. g. The class `Add<D, RA, RB>` adds two Tensor's *a* and *b* (*RA* and *RB* are the number of dimensions for *a* and *b*)
+   - It has a static member `Add<D, RA, RB>::add` which takes the two tensor's as input and returns their sum in a new tensor *c*
+   - If *a* or *b* (or any of its predecessors) require a gradient to be computed then `Tensor<D, R>::gradFn` of *c* contains an instance of `Add<D, RA, RB>`
+   - The method `Add<D, RA, RB>::computeGradients()` then can compute the gradient of *a* or *b*. It also sets the `Tensor<D, R>::grad` of *c* if *c* requires a gradient
+   - `Add<D, RA, RB>::ca` and `Add<D, RA, RB>::cb` contain the `Tensor<D, R>::gradFn` of the tensors *a* and *b* respectively
+- `CNodeBase` is needed since the template parameter of `CNode<D, R>` are not always known
+
+## Python Files
+- Additionally to the C++ files, the library also consists of some python files located at `pylibdl`
+   - `data.py` defines a `DataLoader` with which one can easily iterate over minibatches (similar to torch.utils.data)
+   - `grad.py` contains an object that allows one to disable the gradient globally using a "with" statement (similar to torch.no_grad)
+   - `modules.py` wraps basic NN operations like convolution, max pool or a linear layer into python objects so they be easily used from python (similar to torch.nn.Module)
+   - `optim.py` contains a class that implements Adam (similar to torch.optim.Adam)
+   - `tensor.py` contains a function that converts numpy arrays to tensors of the library (similar to torch.tensor)
+
+
+## Building the Tests
+In order to build the tests run the following commands:
+```
+mkdir build
+cd build
+cmake ..
+cmake --build . --target libdl_tests
+```
+
+In order to execute the tests on Windows run:
+```
+.\tests\Debug\libdl_tests.exe
+```
+
+On linux run:
+```
+./tests/libdl_tests
 ```

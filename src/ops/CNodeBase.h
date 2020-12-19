@@ -13,7 +13,7 @@
 class CNodeBase {
 public:
     std::vector<std::shared_ptr<CNodeBase>> parents;
-    int childrenThatNeedToComputeGradients = 0;
+    std::int64_t childrenThatNeedToComputeGradients = 0;
     bool visited = false;
 
     // compute the gradient of all parents and set them via CNode<D, R>::addGrad()

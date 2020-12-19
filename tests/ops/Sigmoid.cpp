@@ -6,7 +6,7 @@
 TEST_CASE("sigmoid") {
     auto x = trange<2>({16, 8});
 
-    auto r = Sigmoid<float, 2>::sigmoid(x);
+    auto r = Sigmoid<std::float_t, 2>::sigmoid(x);
 
     auto grad = setGradAndBackward<2>(r);
 

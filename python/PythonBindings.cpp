@@ -30,8 +30,8 @@
 
 namespace py = pybind11;
 
-template <typename D, int R>
-std::shared_ptr<Tensor<D, R>> constant(const std::array<long, R> &shape, D value, bool requiresGrad) {
+template <typename D, std::int64_t R>
+std::shared_ptr<Tensor<D, R>> constant(const std::array<std::int64_t, R> &shape, D value, bool requiresGrad) {
     auto ret = std::make_shared<Tensor<D, R>>(shape, requiresGrad);
     ret->data->setConstant(value);
     if (requiresGrad)
@@ -39,18 +39,18 @@ std::shared_ptr<Tensor<D, R>> constant(const std::array<long, R> &shape, D value
     return ret;
 }
 
-template <typename D, int R>
-std::shared_ptr<Tensor<D, R>> zeros(const std::array<long, R> &shape, bool requiresGrad) {
+template <typename D, std::int64_t R>
+std::shared_ptr<Tensor<D, R>> zeros(const std::array<std::int64_t, R> &shape, bool requiresGrad) {
     return constant<D, R>(shape, 0, requiresGrad);
 }
 
-template <typename D, int R>
-std::shared_ptr<Tensor<D, R>> ones(const std::array<long, R> &shape, bool requiresGrad) {
+template <typename D, std::int64_t R>
+std::shared_ptr<Tensor<D, R>> ones(const std::array<std::int64_t, R> &shape, bool requiresGrad) {
     return constant<D, R>(shape, 1, requiresGrad);
 }
 
-template <typename D, int R>
-std::shared_ptr<Tensor<D, R>> uniform(const std::array<long, R> &shape, D low, D high, bool requiresGrad) {
+template <typename D, std::int64_t R>
+std::shared_ptr<Tensor<D, R>> uniform(const std::array<std::int64_t, R> &shape, D low, D high, bool requiresGrad) {
     auto ret = std::make_shared<Tensor<D, R>>(shape, requiresGrad);
     ret->data->device(GlobalThreadPool::myDevice) = ret->data->random() * (ret->data->constant(high) - ret->data->constant(low)) - ret->data->constant(low);
     if (requiresGrad)
@@ -58,13 +58,13 @@ std::shared_ptr<Tensor<D, R>> uniform(const std::array<long, R> &shape, D low, D
     return ret;
 }
 
-template <typename D, int R>
-std::shared_ptr<Tensor<D, R>> centeredUniform(const std::array<long, R> &shape, D lowhigh, bool requiresGrad) {
+template <typename D, std::int64_t R>
+std::shared_ptr<Tensor<D, R>> centeredUniform(const std::array<std::int64_t, R> &shape, D lowhigh, bool requiresGrad) {
     return uniform<D, R>(shape, -lowhigh, lowhigh, requiresGrad);
 }
 
-template <typename D, int R>
-std::shared_ptr<Tensor<D, R>> normal(const std::array<long, R> &shape, D mean, D std, bool requiresGrad) {
+template <typename D, std::int64_t R>
+std::shared_ptr<Tensor<D, R>> normal(const std::array<std::int64_t, R> &shape, D mean, D std, bool requiresGrad) {
     static Eigen::internal::NormalRandomGenerator<D> rng;
     auto ret = std::make_shared<Tensor<D, R>>(shape, requiresGrad);
     ret->data->device(GlobalThreadPool::myDevice) = ret->data->random(rng) * ret->data->constant(std) + ret->data->constant(mean);
@@ -73,10 +73,10 @@ std::shared_ptr<Tensor<D, R>> normal(const std::array<long, R> &shape, D mean, D
     return ret;
 }
 
-template <typename D, int R>
+template <typename D, std::int64_t R>
 std::shared_ptr<Tensor<D, R>> fromNumpy(py::array_t<D, py::array::f_style> &array, bool requiresGrad) {
     auto info = array.request(true);
-    std::array<long, R> shape {};
+    std::array<std::int64_t, R> shape {};
     std::copy_n(std::begin(info.shape), R, std::begin(shape));
 
     Eigen::Tensor<D, R> data(shape);
@@ -89,7 +89,7 @@ std::shared_ptr<Tensor<D, R>> fromNumpy(py::array_t<D, py::array::f_style> &arra
 }
 
 
-template<typename D, int RA, int RB>
+template<typename D, std::int64_t RA, std::int64_t RB>
 void init_datatype_dimension_dimesnion(py::module &m, py::class_<Tensor<D, RA>, std::shared_ptr<Tensor<D, RA>>> tensor) {
     m.def("add", &Add<D, RA, RB>::add);
     tensor.def("__add__", &Add<D, RA, RB>::add);
@@ -107,7 +107,7 @@ void init_datatype_dimension_dimesnion(py::module &m, py::class_<Tensor<D, RA>, 
 
 
 
-template<typename D, int R>
+template<typename D, std::int64_t R>
 void init_datatpye_dimension(py::module &m) {
 
     std::string eigenTensorName = "_EigenTensor" + std::to_string(R);
@@ -116,7 +116,7 @@ void init_datatpye_dimension(py::module &m) {
                 std::array<ssize_t, R> strides {};
                 if constexpr (R > 0) {
                     strides[0] = sizeof(D);
-                    for (int i = 1; i < R; i++)
+                    for (std::int64_t i = 1; i < R; i++)
                         strides[i] = t.dimension(i - 1) * strides[i - 1];
                 }
                 return py::buffer_info(
@@ -135,7 +135,7 @@ void init_datatpye_dimension(py::module &m) {
                 } else {
                     std::stringstream ss;
                     ss << "[ ";
-                    for (int i = 0; i < t.size(); i++) {
+                    for (std::int64_t i = 0; i < t.size(); i++) {
                         ss << t.data()[i] << " ";
                     }
                     ss << "]";
@@ -145,14 +145,14 @@ void init_datatpye_dimension(py::module &m) {
             });
 
     if constexpr (R >= 1)
-        eigenTensor.def("__getitem__", [](Eigen::Tensor<D, R> &t, std::array<long, R> idx) {
-            for (int i = 0; i < R; i++)
+        eigenTensor.def("__getitem__", [](Eigen::Tensor<D, R> &t, std::array<std::int64_t, R> idx) {
+            for (std::int64_t i = 0; i < R; i++)
                 if (idx[i] < 0 || idx[i] >= t.dimension(i))
                     throw std::invalid_argument("index out of range");
             return t(idx);
         });
     if constexpr (R <= 1)
-        eigenTensor.def("__getitem__", [](Eigen::Tensor<D, R> &t, long i) {
+        eigenTensor.def("__getitem__", [](Eigen::Tensor<D, R> &t, std::int64_t i) {
             if ((R == 0 && i != 0) || (R == 1 && (i < 0 || i >= t.dimension(0))))
                 throw std::invalid_argument("index out of range");
             return t(i);
@@ -179,7 +179,7 @@ void init_datatpye_dimension(py::module &m) {
             .def("zero_grad", &Tensor<D, R>::zeroGrad)
             .def("sub_grad", &Tensor<D, R>::subGrad)
             .def("__pow__", &Pow<D, R>::pow)
-            .def_property_readonly("shape", [](const Tensor<D, R> &t){return static_cast<std::array<long, R>>(t.data->dimensions());})
+            .def_property_readonly("shape", [](const Tensor<D, R> &t){return static_cast<std::array<std::int64_t, R>>(t.data->dimensions());})
             .def(py::pickle(
                     [](const Tensor<D, R> &t) {
                         return py::make_tuple(py::array_t<D, py::array::f_style>(t.data->dimensions(), t.data->data()), t.requiresGrad);
@@ -206,7 +206,7 @@ void init_datatpye_dimension(py::module &m) {
         m.def("mean", &Mean<D, R>::mean);
     }
     init_datatype_dimension_dimesnion<D, R, 0>(m, tensor);
-    init_datatype_dimension_dimesnion<D, R, 1>(m, tensor);
+            init_datatype_dimension_dimesnion<D, R, 1>(m, tensor);
     init_datatype_dimension_dimesnion<D, R, 2>(m, tensor);
     init_datatype_dimension_dimesnion<D, R, 3>(m, tensor);
     init_datatype_dimension_dimesnion<D, R, 4>(m, tensor);
@@ -231,5 +231,5 @@ void init_datatpye(py::module &m) {
 PYBIND11_MODULE(libdl_python, m) {
     m.def("set_no_grad", [](bool nograd) {CNodeBase::noGrad = nograd;});
     m.def("get_no_grad", []() {return CNodeBase::noGrad;});
-    init_datatpye<float>(m);
+    init_datatpye<std::float_t>(m);
 }

@@ -7,6 +7,7 @@
 #include <memory>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <queue>
+#include <optional>
 #include "ops/CNode.h"
 #include "ops/Leaf.h"
 #include "GlobalThreadPool.h"
@@ -21,7 +22,7 @@
  *
  * D and R are the template parameter for Eigen::Tensor
  * */
-template <typename D, int R>
+template <typename D,std::int64_t R>
 class Tensor {
 public:
 
@@ -31,7 +32,7 @@ public:
     bool requiresGrad;
 
     template<typename OtherDerived>
-    Tensor(const OtherDerived &t, const std::array<long, R> &shape)
+    Tensor(const OtherDerived &t, const std::array<std::int64_t, R> &shape)
             : data(std::make_shared<Eigen::Tensor<D, R>>(shape)),
               gradFn(std::nullopt),
               requiresGrad(false) {
@@ -43,7 +44,7 @@ public:
               gradFn(std::nullopt),
               requiresGrad(requiresGrad) {}
 
-    explicit Tensor(const std::array<long, R> &shape, bool requiresGrad = false)
+    explicit Tensor(const std::array<std::int64_t, R> &shape, bool requiresGrad = false)
             : data(std::make_shared<Eigen::Tensor<D, R>>(shape)),
               gradFn(std::nullopt), // TODO leaf node
               requiresGrad(requiresGrad) {}

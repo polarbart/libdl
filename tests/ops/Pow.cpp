@@ -7,16 +7,16 @@ TEST_CASE("pow") {
     auto x = trange<2>({16, 8});
 
     SECTION("positive power") {
-        float p = 3.14159;
-        auto r = Pow<float, 2>::pow(x, p);
+        std::float_t p = 3.14159;
+        auto r = Pow<std::float_t, 2>::pow(x, p);
         auto grad = setGradAndBackward<2>(r);
 
         REQUIRE(tensorEqual<2>(*r->data, x->data->pow(p)));
         REQUIRE(tensorEqual<2>(*x->grad, x->data->constant(p) * x->data->pow(p - 1) * grad));
     }
     SECTION("negative power") {
-        float p = -3.14159;
-        auto r = Pow<float, 2>::pow(x, p);
+        std::float_t p = -3.14159;
+        auto r = Pow<std::float_t, 2>::pow(x, p);
         auto grad = setGradAndBackward<2>(r);
 
         REQUIRE(tensorEqual<2>(*r->data, x->data->pow(p)));
@@ -24,8 +24,8 @@ TEST_CASE("pow") {
     }
 
     SECTION("power of 1") {
-        float p = 1;
-        auto r = Pow<float, 2>::pow(x, p);
+        std::float_t p = 1;
+        auto r = Pow<std::float_t, 2>::pow(x, p);
         auto grad = setGradAndBackward<2>(r);
 
         REQUIRE(tensorEqual<2>(*r->data, *x->data));
@@ -33,8 +33,8 @@ TEST_CASE("pow") {
     }
 
     SECTION("power of 0") {
-        float p = 0;
-        auto r = Pow<float, 2>::pow(x, p);
+        std::float_t p = 0;
+        auto r = Pow<std::float_t, 2>::pow(x, p);
         auto grad = setGradAndBackward<2>(r);
 
         REQUIRE(tensorEqual<2>(*r->data, x->data->constant(1)));

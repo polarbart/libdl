@@ -6,14 +6,14 @@
 #include "../Tensor.h"
 #include "../Utils.h"
 
-template <typename D, int RA, int RB>
+template <typename D,std::int64_t RA,std::int64_t RB>
 class SumAlongAxes : public CNode<D, RA - RB> {
 public:
     SumAlongAxes(
             const std::optional<std::shared_ptr<CNode<D, RA>>> &cx,
             const std::shared_ptr<Tensor<D, RA - RB>> &result,
-            const std::array<int, RB> &axes,
-            const std::array<long, RA> &oldDimensions)
+            const std::array <std::int64_t, RB> &axes,
+            const std::array<std::int64_t, RA> &oldDimensions)
             : CNode<D, RA - RB>(Utils::removeOption<std::shared_ptr<CNodeBase>>({cx}), result),
             cx(cx),
             axes(axes),
@@ -29,14 +29,14 @@ public:
      * */
     static std::shared_ptr<Tensor<D, RA - RB>> sum(
             const std::shared_ptr<Tensor<D, RA>> &x,
-            std::array<int, RB> axes) {
+            std::array <std::int64_t, RB> axes) {
 
         for (auto a : axes)
             if (a < 0 || a >= RA)
                 throw std::invalid_argument("axis index out of range");
 
-        std::array<long, RA - RB> newShape {};
-        for (int i = 0, j = 0; i < (RA - RB); j++)
+        std::array<std::int64_t, RA - RB> newShape {};
+        for (std::int64_t i = 0, j = 0; i < (RA - RB); j++)
             if (notIn(j, axes))
                 newShape[i++] = x->data->dimension(j);
 
@@ -48,9 +48,9 @@ public:
 
     void computeGradients() override {
         if (cx.has_value()) {
-            std::array<int, RA> reshape;
-            std::array<int, RA> broadcast;
-            for (int i = 0; i < RA; i++) {
+            std::array <std::int64_t, RA> reshape;
+            std::array <std::int64_t, RA> broadcast;
+            for (std::int64_t i = 0; i < RA; i++) {
                 if (notIn(i, axes)) {
                     reshape[i] = oldDimensions[i];
                     broadcast[i] = 1;
@@ -66,10 +66,10 @@ public:
 
 private:
     std::optional<std::shared_ptr<CNode<D, RA>>> cx;
-    std::array<int, RB> axes;
-    std::array<long, RA> oldDimensions;
+    std::array <std::int64_t, RB> axes;
+    std::array<std::int64_t, RA> oldDimensions;
 
-    static bool notIn(int a, const std::array<int, RB> &axes) {
+    static bool notIn(std::int64_t a, const std::array <std::int64_t, RB> &axes) {
         for (auto i : axes)
             if (a == i)
                 return false;

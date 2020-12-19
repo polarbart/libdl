@@ -6,7 +6,7 @@
 #include "CNode.h"
 #include "../Utils.h"
 
-template <typename D, int R>
+template <typename D, std::int64_t R>
 class Relu : public CNode<D, R> {
 
 public:

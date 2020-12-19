@@ -6,15 +6,15 @@
 #include "CNode.h"
 #include "../Utils.h"
 
-template<typename D, int RA, int RB>
-class Add : public CNode<D, std::max(RA, RB)> {
+template<typename D,std::int64_t RA,std::int64_t RB>
+class Add : public CNode<D, std::max<std::int64_t>(RA, RB)> {
 
 public:
     Add(
             const std::optional<std::shared_ptr<CNode<D, RA>>> &ca,
             const std::optional<std::shared_ptr<CNode<D, RB>>> &cb,
-            const std::shared_ptr<Tensor<D, std::max(RA, RB)>> &result)
-            : CNode<D, std::max(RA, RB)>(Utils::removeOption<std::shared_ptr<CNodeBase>>({ca, cb}), result),
+            const std::shared_ptr<Tensor<D, std::max<std::int64_t>(RA, RB)>> &result)
+            : CNode<D, std::max<std::int64_t>(RA, RB)>(Utils::removeOption<std::shared_ptr<CNodeBase>>({ca, cb}), result),
             ca(ca),
             cb(cb) {};
 
@@ -30,26 +30,26 @@ public:
      *
      * \return a new tensor of the shape with more dimensions
      * */
-    static std::shared_ptr<Tensor<D, std::max(RA, RB)>> add(
+    static std::shared_ptr<Tensor<D, std::max<std::int64_t>(RA, RB)>> add(
             const std::shared_ptr<Tensor<D, RA>> &a,
             const std::shared_ptr<Tensor<D, RB>> &b) {
 
         if constexpr (RB > RA)
             return Add<D, RB, RA>::add(b, a);
         else {
-            for (int i = 0; i < RB; i++)
+            for (std::int64_t i = 0; i < RB; i++)
                 if (a->data->dimension(i) != b->data->dimension(i))
                     throw std::invalid_argument("shapes mismatch");
 
             std::shared_ptr<Tensor<D, RA>> result;
             if constexpr (RB < RA) {
-                std::array<int, RA> reshape{};
-                std::array<int, RA> broadcast{};
-                for (int i = 0; i < RB; ++i) {
+                std::array <std::int64_t, RA> reshape{};
+                std::array <std::int64_t, RA> broadcast{};
+                for (std::int64_t i = 0; i < RB; ++i) {
                     reshape[i] = b->data->dimension(i);
                     broadcast[i] = 1;
                 }
-                for (int i = RB; i < RA; ++i) {
+                for (std::int64_t i = RB; i < RA; ++i) {
                     reshape[i] = 1;
                     broadcast[i] = a->data->dimension(i);
                 }
@@ -66,17 +66,17 @@ public:
 
     void computeGradients() override {
         if (ca.has_value())
-            ca.value()->addGrad(*CNode<D, RA>::grad);
+            ca.value()->addGrad(*CNode<D, std::max<std::int64_t>(RA, RB)>::grad);
         if (cb.has_value()) {
             if constexpr (RB < RA) {
-                std::array<int, RA - RB> sumDims {};
-                for (int i = 0; i < RA - RB; ++i)
+                std::array <std::int64_t, RA - RB> sumDims {};
+                for (std::int64_t i = 0; i < RA - RB; ++i)
                     sumDims[i] = RB + i;
-                cb.value()->addGrad(CNode<D, RA>::grad->sum(sumDims));
+                cb.value()->addGrad(CNode<D, std::max<std::int64_t>(RA, RB)>::grad->sum(sumDims));
             } else
-                cb.value()->addGrad(*CNode<D, RA>::grad);
+                cb.value()->addGrad(*CNode<D, std::max<std::int64_t>(RA, RB)>::grad);
         }
-        CNode<D, RA>::finishComputeGradient();
+        CNode<D, std::max<std::int64_t>(RA, RB)>::finishComputeGradient();
     }
 
 private:

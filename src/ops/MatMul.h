@@ -7,7 +7,7 @@
 #include "../Tensor.h"
 #include "../Utils.h"
 
-template <typename D, int RA, int RB>
+template <typename D, std::int64_t RA, std::int64_t RB>
 class MatMul : public CNode<D, RA + RB - 2> {
 
 public:
@@ -36,11 +36,11 @@ public:
         if (a->data->dimension(RA - 1) != b->data->dimension(0))
             throw std::invalid_argument("the last dimension of a and the first dimension of b must match");
 
-        std::array<long, RA + RB - 2> shape {};
+        std::array<std::int64_t, RA + RB - 2> shape {};
         std::copy_n(std::begin(a->data->dimensions()), RA - 1, std::begin(shape));
         std::copy_n(std::begin(b->data->dimensions()) + 1, RB - 1, std::begin(shape) + RA - 1);
 
-        auto t = a->data->contract(*b->data, Eigen::array<Eigen::IndexPair<int>, 1>{Eigen::IndexPair<int>(RA-1, 0)});
+        auto t = a->data->contract(*b->data, Eigen::array<Eigen::IndexPair <std::int64_t>, 1>{Eigen::IndexPair <std::int64_t>(RA-1, 0)});
         auto result = std::make_shared<Tensor<D, RA + RB - 2>>(t, shape);
 
         if ((a->needsGradient() || b->needsGradient()) && !CNodeBase::noGrad)
@@ -50,15 +50,15 @@ public:
 
     void computeGradients() override {
         if (ca.has_value()) {
-            Eigen::array<Eigen::IndexPair<int>, RB - 1> d {};
-            for (int i = 0; i < RB - 1; ++i)
-                d[i] = Eigen::IndexPair<int>(RA + RB - 2 - i - 1, RB - i - 1);
+            Eigen::array<Eigen::IndexPair <std::int64_t>, RB - 1> d {};
+            for (std::int64_t i = 0; i < RB - 1; ++i)
+                d[i] = Eigen::IndexPair <std::int64_t>(RA + RB - 2 - i - 1, RB - i - 1);
             ca.value()->addGrad(CNode<D, RA + RB - 2>::grad->contract(*b, d));
         }
         if (cb.has_value()) {
-            Eigen::array<Eigen::IndexPair<int>, RA - 1> d {};
-            for (int i = 0; i < RA - 1; ++i)
-                d[i] = Eigen::IndexPair<int>(i, i);
+            Eigen::array<Eigen::IndexPair <std::int64_t>, RA - 1> d {};
+            for (std::int64_t i = 0; i < RA - 1; ++i)
+                d[i] = Eigen::IndexPair <std::int64_t>(i, i);
             cb.value()->addGrad(a->contract(*CNode<D, RA + RB - 2>::grad, d));
         }
         CNode<D, RA + RB - 2>::finishComputeGradient();
