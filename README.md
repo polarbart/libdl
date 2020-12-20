@@ -17,9 +17,11 @@ However it does not include GPU support.
 mkdir build
 cd build
 cmake ..
-cmake --build . --target libdl_python  --config Release
+cmake --build . --target libdl_python --config Release
 ```
-Note that the library is not installed globally. It is copied to the folder `pylibdl`.
+
+Note that the compilation might take several minutes and that the library is not installed globally. 
+It is copied to the folder `pylibdl/bin`.
 ### Dependencies  
  - Your python version should be 3.5 or higher
  - The library depends on the following packages:
@@ -100,7 +102,7 @@ from pylibdl.modules import Module, Sequential, Linear, Sigmoid
 from pylibdl.optim import Adam
 
 # hyperparamter
-hidden_units = 2
+hidden_units = 4
 lr = 1e-2
 epochs = 10000
 log_every = 1000
@@ -159,18 +161,18 @@ Output:
 
 ```
 epoch |  0^0 |  0^1 |  1^0 |  1^1 | loss
-    0 | 0.62 | 0.57 | 0.60 | 0.56 | 0.260224
- 1000 | 0.12 | 0.86 | 0.90 | 0.11 | 0.013432
- 2000 | 0.06 | 0.93 | 0.95 | 0.06 | 0.003885
- 3000 | 0.04 | 0.95 | 0.96 | 0.04 | 0.001742
- 4000 | 0.03 | 0.97 | 0.97 | 0.03 | 0.000904
- 5000 | 0.02 | 0.97 | 0.98 | 0.02 | 0.000502
- 6000 | 0.02 | 0.98 | 0.99 | 0.02 | 0.000289
- 7000 | 0.01 | 0.98 | 0.99 | 0.01 | 0.000170
- 8000 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000102
- 9000 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000061
- 9999 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000037
-```
+    0 | 0.57 | 0.52 | 0.58 | 0.53 | 0.252373
+ 1000 | 0.05 | 0.94 | 0.95 | 0.05 | 0.002684
+ 2000 | 0.03 | 0.97 | 0.97 | 0.03 | 0.000779
+ 3000 | 0.02 | 0.98 | 0.98 | 0.02 | 0.000345
+ 4000 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000176
+ 5000 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000096
+ 6000 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000055
+ 7000 | 0.01 | 0.99 | 0.99 | 0.01 | 0.000032
+ 8000 | 0.00 | 1.00 | 1.00 | 0.00 | 0.000019
+ 9000 | 0.00 | 1.00 | 1.00 | 0.00 | 0.000011
+ 9999 | 0.00 | 1.00 | 1.00 | 0.00 | 0.000007
+ ```
 
  
 ## Final Project
@@ -184,13 +186,13 @@ It can be found at [Final.ipynb](Final.ipynb). Some code fragments are also loca
 In order to train the model by yourself, 
 download the [distracted driver dataset](https://www.kaggle.com/c/state-farm-distracted-driver-detection/data) 
 and extract it into the folder `distracted_driver`.
-Don't forget to extract the images from `imgs.zip`.  
 In the end your folder structure should look like this:
 ```
 |-- libdl/  
 |   |-- distracted_driver/  
-|   |   |-- test/  
-|   |   |-- train/  
+|   |   |-- imgs/
+|   |   |   |-- test/  
+|   |   |   |-- train/   
 |   |   |-- driver_imgs_list.csv  
 |   |   |-- sample_submission.csv  
 |   |-- Final.ipynb
@@ -251,20 +253,11 @@ Training and testing takes about 30 seconds.
 
 
 ## Building the Tests
-In order to build the tests run the following commands:
+In order to build and run the tests run the following commands:
 ```
 mkdir build
 cd build
 cmake ..
 cmake --build . --target libdl_tests
-```
-
-In order to execute the tests on Windows run:
-```
-.\tests\Debug\libdl_tests.exe
-```
-
-On linux run:
-```
 ./tests/libdl_tests
 ```

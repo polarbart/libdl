@@ -39,17 +39,17 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/libs/pybind11)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/libs/Catch2/contrib)
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/pylibdl/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/pylibdl/bin/$<0:>)
 
 if(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -O3 -march=native")
 endif (UNIX)
 
-if(WIN32)
+if(MSVC)
     add_compile_options(/wd4305)
     add_compile_options(/wd4267)
     add_compile_options(/wd4554)
-endif(WIN32)
+endif(MSVC)
 
 set(LIBDL_SRC libdl_src)
 set(LIBDL_PYTHON libdl_python)

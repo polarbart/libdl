@@ -85,7 +85,7 @@ class DistractedDriver(Dataset):
 
     def __getitem__(self, i):
         n, c = self.data[i]
-        img = imread(os.path.join(self.path, 'train', f'c{c}', n))
+        img = imread(os.path.join(self.path, 'imgs', 'train', f'c{c}', n))
         img = resize(img, self.size, anti_aliasing=False)
         lc = np.zeros(10)
         lc[c] = 1

@@ -2,7 +2,6 @@
 #ifndef LIBDL_CONV2D_H
 #define LIBDL_CONV2D_H
 
-#include <iostream>
 #include "CNode.h"
 #include "../Utils.h"
 
@@ -122,7 +121,11 @@ public:
 
             auto xvol = x->reshape(reshape).extract_volume_patches(1, dheight, dwidth, 1, 1, 1, 1, 1, 1, 0, 0, padding, padding, padding, padding, 0);
 
-            auto im2col = xvol.reshape(reshape2);
+            #ifdef _WIN32  // otherwise compilation takes hours (for some weired reason)
+                auto im2col = xvol.reshape(reshape2).eval();
+            #else
+                auto im2col = xvol.reshape(reshape2);
+            #endif
 
             if (stride == 1) {
                 auto i2cFilter = CNode<D, R>::grad->sum(Eigen::array <std::int64_t, 1>{3}).reshape(Eigen::array<std::int64_t, 2>{CNode<D, R>::grad->dimension(0), reshape2[0]}).eval();
@@ -186,7 +189,11 @@ private:
         std::int64_t swidth = (dilation * (x.dimension(2) - 1) + 1 - filterDims[2] + 2 * padding + additionalBRPadding) / stride + 1;
         Eigen::array<std::int64_t, R - 1> reshape{filterDims[0] * filterDims[1] * filterDims[2], sheight * swidth, x.dimension(3)};
 
-        auto im2col = patches.reshape(reshape);
+        #ifdef _WIN32  // otherwise compilation takes hours (for some weired reason)
+            auto im2col = patches.reshape(reshape).eval();
+        #else
+            auto im2col = patches.reshape(reshape);
+        #endif
         auto i2cFilter = filter.reshape(Eigen::array<std::int64_t, 2>{reshape[0], filterDims[3]});
         auto conv = i2cFilter.contract(im2col, Eigen::array<Eigen::IndexPair <std::int64_t>, 1>{Eigen::IndexPair <std::int64_t>(0, 0)});
 

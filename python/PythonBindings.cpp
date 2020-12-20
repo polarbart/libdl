@@ -198,7 +198,6 @@ void init_datatpye_dimension(py::module &m) {
     m.def("sigmoid", &Sigmoid<D, R>::sigmoid);
     m.def("leaky_relu", &LeakyRelu<D, R>::leakyRelu, py::arg("x"), py::arg("negativeSlope") = 0.01);
     m.def("relu", &Relu<D, R>::relu);
-    m.def("sigmoid", &Sigmoid<D, R>::sigmoid);
     m.def("pow", &Pow<D, R>::pow);
     m.def("apply_adam", &Adam<D, R>::applyAdam);
     if constexpr (R > 0) {
