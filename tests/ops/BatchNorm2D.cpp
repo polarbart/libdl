@@ -26,7 +26,7 @@ TEST_CASE("batchnorm2d") {
         Eigen::Tensor<std::float_t, 4> rReference = gamma->data->reshape(reshape).broadcast(broadcast) * xh +
                                              beta->data->reshape(reshape).broadcast(broadcast);
 
-        REQUIRE(tensorEqual(*r->data, rReference));
+        REQUIRE(tensorEqual<4>(*r->data, rReference));
         REQUIRE(tensorEqual<1>(*runningMean->data, mean * mean.constant(0.9)));
         REQUIRE(tensorEqual<1>(*runningVar->data, var * var.constant(0.9) + var.constant(0.1)));
 
@@ -45,7 +45,7 @@ TEST_CASE("batchnorm2d") {
         auto dv = ((dxh * xmm).sum(sum) * var.constant(-.5) / rvpe.cube()).eval();
         Eigen::Tensor<std::float_t, 4> dx = -dxh / rvpe.reshape(reshape).broadcast(broadcast) + dv.reshape(reshape).broadcast(broadcast) * (xmm * xmm.constant(2. / 128) + xmm.constant(1. / 128));
 
-        REQUIRE(tensorEqual(*x->grad, dx));
+        REQUIRE(tensorEqual<4>(*x->grad, dx));
     }
     SECTION("useRunningAvgVar = true") {
         auto r = BatchNorm2D<std::float_t>::batchNorm2d(x, gamma, beta, runningMean, runningVar, 0.9, 0, true);
@@ -55,7 +55,7 @@ TEST_CASE("batchnorm2d") {
         Eigen::Tensor<std::float_t, 4> rReference = gamma->data->reshape(reshape).broadcast(broadcast) * *x->data +
                                              beta->data->reshape(reshape).broadcast(broadcast);
 
-        REQUIRE(tensorEqual(*r->data, rReference, 1e-4));
+        REQUIRE(tensorEqual<4>(*r->data, rReference, 1e-4));
         REQUIRE(tensorEqual<1>(*runningMean->data, runningMean->data->constant(0)));
         REQUIRE(tensorEqual<1>(*runningVar->data, runningVar->data->constant(1)));
 

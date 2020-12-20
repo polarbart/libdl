@@ -38,7 +38,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/libs/Catch2/contrib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/pylibdl/bin/$<0:>)
 
 if(UNIX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -O3 -march=native -Wno-enum-compare")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -lrt -O3 -march=native -Wno-enum-compare")
 endif (UNIX)
 
 if(MSVC)
