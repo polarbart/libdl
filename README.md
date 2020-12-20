@@ -199,10 +199,6 @@ In the end your folder structure should look like this:
 |   |-- ...
 ```
 
-## MNIST
-See [MNIST.ipynb](MNIST.ipynb)  
-Training and testing takes about 30 seconds. 
-
 # Top Level Documentation
 - The library uses Eigen tensors
 - The library can be found at [`src`](src)

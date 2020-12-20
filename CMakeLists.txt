@@ -26,11 +26,7 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/libs/Catch2" OR
 endif()
 
 enable_testing()
-# add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Eigen)
-# set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-header-filter=.;-checks=-*,clang-analyzer-*,clang-analyzer-cplusplus*,modernize-*,performance-*,openmp-*")
-
-# list(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/libs/Eigen)
-# set(Eigen3_DIR ${PROJECT_SOURCE_DIR}/libs/Eigen/cmake)
+add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Eigen)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/Catch2)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -42,7 +38,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/libs/Catch2/contrib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/pylibdl/bin/$<0:>)
 
 if(UNIX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -O3 -march=native")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation -O3 -march=native -Wno-enum-compare")
 endif (UNIX)
 
 if(MSVC)
