@@ -9,7 +9,7 @@ It includes
  - Python bindings
  - Multi core processing
 
-However it does not include GPU support.
+However, it does not include GPU support.
 
 ## Installation
 ### Compile the Library
@@ -20,7 +20,7 @@ cmake ..
 cmake --build . --target libdl_python --config Release
 ```
 
-Note that the compilation might take several minutes and that the library is not installed globally. 
+Note, that the compilation might take several minutes and that the library is not installed globally. 
 It is copied to the folder `pylibdl/bin`.
 ### Dependencies  
  - Your python version should be 3.5 or higher
@@ -30,22 +30,22 @@ It is copied to the folder `pylibdl/bin`.
    - `scikit-image>=0.14`
  - You can install the dependencies with `pip install -r requirements.txt`
 
-# How it Works
+## How it Works
 The library uses a dynamic computational graph and is inspired by PyTorch. 
-I. e. you don't have to define your computational graph in beforehand. It is created implicitly while you do your computations.
+I. e. you don't have to define your computational graph beforehand. It is created implicitly, while you do your computations.
 
 This is achieved with a slightly more advanced tensor class, which not only holds a reference to its data `Tensor::data`, 
 but also a reference to its gradient `Tensor::grad` and a reference to the operation that created that tensor `Tensor::gradFn`.
 
-When the `Tensor::backward()` function is called, the gradients for all predecessors are computed. 
-More precisely the gradient of the tensor calling 'backward' with respect to each predecessor is computed.
+When the `Tensor::backward()` method is called, the gradients for all predecessors are computed. 
+More precisely, the gradient of the tensor calling 'backward' with respect to each predecessor is computed.
 
 The tensor class can be found at [`src/Tensor.h`](src/Tensor.h). 
-The operations like add, conv, matmul, batch norm, ... can be found at [`src/ops/`](src/ops). 
+The operations such as add, conv, matmul, batch norm, ... can be found at [`src/ops/`](src/ops). 
 Each operation has a static method which computes the 'forward pass' 
 and a method called `computeGradients` which computes the 'backward pass', i. e. the gradients for its parents.
 
-## A Simple Example
+### A Simple Example
 Let's look at the function
 ```
 f(a, b) = a^2 + b^3
@@ -91,7 +91,7 @@ None None
 The animation below visualizes what happens under the hood. 
 ![animation](animation.gif)
 
-## XOR Example
+### XOR Example
  - The example below shows how this library can be used to train neural networks
  - You can look at [`pylibdl/modules.py`](pylibdl/modules.py) if you want to get a deeper understanding of how the layers/modules are implemented
 
@@ -175,18 +175,19 @@ epoch |  0^0 |  0^1 |  1^0 |  1^1 | loss
  ```
 
  
-## Final Project
+### Advanced Example
 
-For the final project I trained a ResNet-like network on the [distracted driver dataset](https://www.kaggle.com/c/state-farm-distracted-driver-detection/data).
+For the practical course I had to realize a final project showing the library's capabilities.  
+For that I trained a ResNet-like network on the [distracted driver dataset](https://www.kaggle.com/c/state-farm-distracted-driver-detection/data).
 Additionally, I did an [adversarial attack](https://arxiv.org/abs/1312.6199) for some images such that the network classifies them as "save driving", regardless of their true label.
 
 It can be found at [Final.ipynb](Final.ipynb). Some code fragments are also located at [utils.py](utils.py).  
-(Sadly the GitHub ipynb viewer does not render everything correctly i. e. if possible view it on your local jupyter server)
+(Sadly, the GitHub ipynb viewer does not render everything correctly i. e. if possible view it on your local jupyter server)
 
 In order to train the model by yourself, 
 download the [distracted driver dataset](https://www.kaggle.com/c/state-farm-distracted-driver-detection/data) 
 and extract it into the folder `distracted_driver`.
-In the end your folder structure should look like this:
+In the end, your folder structure should look like this:
 ```
 |-- libdl/  
 |   |-- distracted_driver/  
@@ -199,8 +200,8 @@ In the end your folder structure should look like this:
 |   |-- ...
 ```
 
-# Top Level Documentation
-- The library uses Eigen tensors
+## Top Level Documentation
+- The library uses [Eigen](http://eigen.tuxfamily.org/) tensors
 - The library can be found at [`src`](src)
    - [`src/ops`](src/ops) contains all the operations on tensors like addition, convolution, max pool, batch norm, ...
    - [`src/functional`](src/functional) contains all operations that do not require gradients such as the computations for Adam 
@@ -208,7 +209,7 @@ In the end your folder structure should look like this:
 - The tests can be found under [`tests`](tests)
 - The slides of the final presentation can be found [here](https://tumde-my.sharepoint.com/:p:/g/personal/julius_hansjakob_tum_de/EZiiWbJhPVtFjYyqcl7SSVcBREcJFnrrrAgrX3BBRK6pOg?e=iRo2kZ)
 
-## Code Structure
+### Code Structure
 - The library contains two important classes: `Tensor<D, R>` and `CNode<D, R>`
 - The image below shows a simplified class diagram
   ![class_diagram](class_diagram.png)
@@ -220,7 +221,7 @@ In the end your folder structure should look like this:
 - `Tensor<D, R>::grad` holds the gradient of this tensor
 - `Tensor<D, R>::gradFn` holds the operation that created this tensor in order to compute the gradients for its parents
 - `Tensor<D, R>::requiresGrad` indicates whether the gradient for this tensor should be stored in `Tensor<D, R>::grad`
-- The `Tensor<D, R>::backward()` function computes the gradient for all predecessors, that require a gradient, w. r. t. the tensor calling it
+- The `Tensor<D, R>::backward()` method computes the gradient for all predecessors, that require a gradient, w. r. t. the tensor calling it
 - If `Tensor<D, R>::requiresGrad` is set to *true* `Tensor<D, R>::gradFn` always contains a value. 
   In particular, this means, if no operation created this tensor, 
   then `Tensor<D, R>::gradFn` is a `Leaf<D, R>` object which just passes the gradient it receives to the tensor
@@ -228,20 +229,20 @@ In the end your folder structure should look like this:
 ### The `CNode<D, R>` Class (and its Parent `CNodeBase`)
 - CNode represents a computational node in a computational graph
 - `CNode<D, R>::grad` holds the gradient of this computational node which is set by its children
-- The virtual function `CNodeBase::computeGradients()` computes the gradient (i. e. sets `CNode<D, R>::grad`) for all parents of this computational node. 
-  Additionally it sets `Tensor<D, R>::grad` of its holder if `Tensor<D, R>::requiresGrad` is true
+- The virtual method `CNodeBase::computeGradients()` computes the gradient (i. e. sets `CNode<D, R>::grad`) for all parents of this computational node. 
+  Additionally, it sets `Tensor<D, R>::grad` of its holder if `Tensor<D, R>::requiresGrad` is true
 - `CNode<D, R>::holder` is a weak reference to the tensor which is represented by this computational node
 - Every computational operation inherits `CNode<D, R>`, which is important for the automatic differentiation
 - E. g. The class `Add<D, RA, RB>` adds two Tensor's *a* and *b* (*RA* and *RB* are the number of dimensions for *a* and *b*)
-   - It has a static member `Add<D, RA, RB>::add` which takes the two tensor's as input and returns their sum in a new tensor *c*
-   - If *a* or *b* (or any of its predecessors) require a gradient to be computed then `Tensor<D, R>::gradFn` of *c* contains an instance of `Add<D, RA, RB>`
+   - It has a static member `Add<D, RA, RB>::add`, which takes the two tensor's as input and returns their sum in a new tensor *c*
+   - If *a* or *b* (or any of its predecessors) requires a gradient to be computed, then `Tensor<D, R>::gradFn` of *c* contains an instance of `Add<D, RA, RB>`
    - The method `Add<D, RA, RB>::computeGradients()` then can compute the gradient of *a* or *b*. It also sets the `Tensor<D, R>::grad` of *c* if *c* requires a gradient
    - `Add<D, RA, RB>::ca` and `Add<D, RA, RB>::cb` contain the `Tensor<D, R>::gradFn` of the tensors *a* and *b* respectively
-- `CNodeBase` is needed since the template parameter of `CNode<D, R>` are not always known
+- `CNodeBase` is needed since the template parameters of `CNode<D, R>` are not always known
 
-## Python Files
+### Python Files
 - Additionally to the C++ files, the library also consists of some python files located at `pylibdl`
-   - `data.py` defines a `DataLoader` with which one can easily iterate over minibatches (similar to torch.utils.data)
+   - `data.py` defines a `DataLoader`, with which one can easily iterate over minibatches (similar to torch.utils.data)
    - `grad.py` contains an object that allows one to disable the gradient globally using a "with" statement (similar to torch.no_grad)
    - `modules.py` wraps basic NN operations like convolution, max pool or a linear layer into python objects so they be easily used from python (similar to torch.nn.Module)
    - `optim.py` contains a class that implements Adam (similar to torch.optim.Adam)
@@ -249,7 +250,7 @@ In the end your folder structure should look like this:
 
 
 ## Building the Tests
-In order to build and run the tests run the following commands:
+In order to build and run the tests, run the following commands:
 ```
 mkdir build
 cd build
